@@ -1,0 +1,28 @@
+0 info it worked if it ends with ok
+1 verbose cli [ 'D:\\Program Files\\nodejs\\node.exe',
+1 verbose cli   'C:\\Users\\Wayne\\AppData\\Roaming\\npm\\node_modules\\cnpm\\node_modules\\npm\\bin\\npm-cli.js',
+1 verbose cli   '--userconfig=C:\\Users\\Wayne\\.cnpmrc',
+1 verbose cli   '--disturl=https://npm.taobao.org/mirrors/node',
+1 verbose cli   '--registry=https://registry.npm.taobao.org',
+1 verbose cli   'start' ]
+2 info using npm@3.10.5
+3 info using node@v4.4.7
+4 verbose stack Error: missing script: start
+4 verbose stack     at run (C:\Users\Wayne\AppData\Roaming\npm\node_modules\cnpm\node_modules\npm\lib\run-script.js:151:19)
+4 verbose stack     at C:\Users\Wayne\AppData\Roaming\npm\node_modules\cnpm\node_modules\npm\lib\run-script.js:61:5
+4 verbose stack     at C:\Users\Wayne\AppData\Roaming\npm\node_modules\cnpm\node_modules\npm\node_modules\read-package-json\read-json.js:356:5
+4 verbose stack     at checkBinReferences_ (C:\Users\Wayne\AppData\Roaming\npm\node_modules\cnpm\node_modules\npm\node_modules\read-package-json\read-json.js:320:45)
+4 verbose stack     at final (C:\Users\Wayne\AppData\Roaming\npm\node_modules\cnpm\node_modules\npm\node_modules\read-package-json\read-json.js:354:3)
+4 verbose stack     at then (C:\Users\Wayne\AppData\Roaming\npm\node_modules\cnpm\node_modules\npm\node_modules\read-package-json\read-json.js:124:5)
+4 verbose stack     at C:\Users\Wayne\AppData\Roaming\npm\node_modules\cnpm\node_modules\npm\node_modules\read-package-json\read-json.js:311:12
+4 verbose stack     at C:\Users\Wayne\AppData\Roaming\npm\node_modules\cnpm\node_modules\npm\node_modules\graceful-fs\graceful-fs.js:78:16
+4 verbose stack     at FSReqWrap.readFileAfterClose [as oncomplete] (fs.js:380:3)
+5 verbose cwd F:\code\nodejs\weixin-robot
+6 error Windows_NT 10.0.10586
+7 error argv "D:\\Program Files\\nodejs\\node.exe" "C:\\Users\\Wayne\\AppData\\Roaming\\npm\\node_modules\\cnpm\\node_modules\\npm\\bin\\npm-cli.js" "--userconfig=C:\\Users\\Wayne\\.cnpmrc" "--disturl=https://npm.taobao.org/mirrors/node" "--registry=https://registry.npm.taobao.org" "start"
+8 error node v4.4.7
+9 error npm  v3.10.5
+10 error missing script: start
+11 error If you need help, you may report this error at:
+11 error     <https://github.com/npm/npm/issues>
+12 verbose exit [ 1, true ]
