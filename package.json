@@ -1,0 +1,23 @@
+{
+  "name": "weixin-robot",
+  "version": "1.0.0",
+  "description": "这是一个微信机器人",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cloes/weixin-robot.git"
+  },
+  "keywords": [
+    "weixin",
+    "robot"
+  ],
+  "author": "Cloes",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/cloes/weixin-robot/issues"
+  },
+  "homepage": "https://github.com/cloes/weixin-robot#readme"
+}
