@@ -8,14 +8,19 @@ const https = require('https');
 
 let mainWindow;
 
-function createWindow() {
+let ipc = require('electron').ipcMain;
 
+function createWindow() {
     mainWindow = new BrowserWindow({width:800,height:600});
 
     mainWindow.loadURL(`file://${__dirname}/index.html`);
 
-    mainWindow.webContents.openDevTools();
+    ipc.on('show-qr-image',(event, data)=>{
+        console.log("get message from client");
+        event.sender.send('show-image');
+    })
 
+    mainWindow.webContents.openDevTools();
     mainWindow.on('closed',function(){
         mainWindow = null;
     });
