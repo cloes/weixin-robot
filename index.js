@@ -8,6 +8,8 @@ const https = require('https');
 
 let mainWindow;
 
+var uuid;
+
 let ipc = require('electron').ipcMain;
 
 function createWindow() {
@@ -55,27 +57,32 @@ function getUuid() {
     };
 
     var req = https.request(options, (res) => {
-        console.log(`STATUS: ${res.statusCode}`);
+        //console.log(`STATUS: ${res.statusCode}`);
         //console.log(`HEADERS: ${JSON.stringify(res.headers)}`);
-        console.log('headers: ', res.headers);
+        //console.log('headers: ', res.headers);
         res.setEncoding('utf8');
         res.on('data', (chunk) => {
-          console.log(`BODY: ${chunk}`);
+          //console.log(`BODY: ${chunk}`);
           var pattern = /window.QRLogin.code = (\d+); window.QRLogin.uuid = "(\S+?)"/;
           pattern.test(chunk);
-          var uuid = RegExp.$2;
+          uuid = RegExp.$2;
+          createQRimage(uuid);
           wait4login(uuid);
         });
+
         res.on('end', () => {
           console.log('No more data in response.');
         })
     });
+
     req.end();
 }
 
-function createQRimage(){
+function createQRimage(uuid){
+    var uuidString = 'https://login.weixin.qq.com/l/' + uuid;
+    console.log(uuidString);
     var qr = require('qr-image');
-    var qr_png = qr.image('I love QR!', { type: 'png' });
+    var qr_png = qr.image(uuidString, { type: 'png' });
     qr_png.pipe(require('fs').createWriteStream('i_love_qr.png'));
 }
 
@@ -86,7 +93,6 @@ function wait4login(uuid){
     var try_later_secs = 1;
     var MAX_RETRY_TIMES = 10;
     var code = 0;
-
     var retry_time = MAX_RETRY_TIMES;
 
     var params = {
@@ -102,13 +108,14 @@ function wait4login(uuid){
     };
 
     var req = https.request(options, (res) => {
-        console.log(`STATUS: ${res.statusCode}`);
+        console.log(`2STATUS: ${res.statusCode}`);
         //console.log(`HEADERS: ${JSON.stringify(res.headers)}`);
         //console.log('headers: ', res.headers);
         res.setEncoding('utf8');
         res.on('data', (chunk) => {
           console.log('2headers: ', res.headers);
           console.log(`2BODY: ${chunk}`);
+          console.log("scaned!");
         });
         res.on('end', () => {
           console.log('2No more data in response.');
@@ -122,8 +129,8 @@ function wait4login(uuid){
 
 app.on('ready',()=>{
   createWindow();
-  getUuid();
-  createQRimage();
+  getUuid(uuid);
+  //wait4login();
 })
 
 app.on('window-all-closed',function(){
