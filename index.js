@@ -34,7 +34,7 @@ function convertArrayToString(params) {
     for (var key in params) {
         output += key + '=' + params[key] + '&';
     }
-    return output.substring(0,output.length - 1);
+    return output.substring(0, output.length - 1);
 }
 
 function getUuid() {
@@ -128,11 +128,11 @@ function doRequest(uuid){
 
           if (code == 408) {
               //timeout
+              Console.log("---408---");
               if(retry_time > 0){
                   retry_time--;
                   code = doRequest(uuid);
               }else{
-                  exit(7);
                   return false;
               }
           }
@@ -145,9 +145,15 @@ function doRequest(uuid){
         })
     });
 
-
     req.on('error',()=>{
-        console.log("request error");
+        if(retry_time > 0){
+            retry_time--;
+            console.log("request error");
+            return doRequest(uuid);
+        }else{
+            console.log("timeout");
+            return 408;
+        }
     })
 
     req.end();
