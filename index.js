@@ -6,11 +6,17 @@ const BrowserWindow = electron.BrowserWindow;
 
 const https = require('https');
 
+const http = require('http');
+
 let mainWindow;
 
 let ipc = require('electron').ipcMain;
 
 var retry_time = 3;
+
+var uuid;
+
+var tip = 1;
 
 function createWindow() {
     mainWindow = new BrowserWindow({width:800,height:600});
@@ -66,11 +72,11 @@ function getUuid() {
                   pattern.test(chunk);
                   uuid = RegExp.$2;
                   console.log(`origin uuid:${uuid}`);
-                  resolve(uuid);
+                  resolve();
                 });
 
                 res.on('end', () => {
-                  console.log('No more data in response.');
+                  //console.log('No more data in response.');
                 })
             });
 
@@ -78,98 +84,105 @@ function getUuid() {
         });
 }
 
-function createQRimage(uuid){
+function createQRimage(){
     var uuidString = 'https://login.weixin.qq.com/l/' + uuid;
     var qr = require('qr-image');
     var qr_png = qr.image(uuidString, { type: 'png' });
     qr_png.pipe(require('fs').createWriteStream('login.png'));
-    return uuid;
+    //return uuid;
 }
 
-function wait4login(uuid){
-    var MAX_RETRY_TIMES = 3;
-    var retry_time = MAX_RETRY_TIMES;
-    var code = 0;
-    code = doRequest(uuid,retry_time);
-    console.log(`return code is ${code}`);
-}
 
-function doRequest(uuid){
-    //var LOGIN_TEMPLATE = 'https://login.weixin.qq.com/cgi-bin/mmwebwx-bin/login?tip=%s&uuid=%s&_=%s';
-    console.log(`try_time:${retry_time}`);
-    var login_url = 'login.weixin.qq.com';
-    var tip = 1;
-    var try_later_secs = 1;
-    var code = 0;
 
-    var params = {
-      'tip': tip,
-      'uuid': uuid,
-      '_': Math.round(new Date().getTime()/1000),
-    }
-    var paramsString = convertArrayToString(params);
-    console.log(paramsString);
-    var options = {
-        hostname: login_url,
-        path: '/cgi-bin/mmwebwx-bin/login' + paramsString,
-        method: 'GET',
-    };
+function doRequest(){
+    return new Promise(function(resolve,reject){
+        //var LOGIN_TEMPLATE = 'https://login.weixin.qq.com/cgi-bin/mmwebwx-bin/login?tip=%s&uuid=%s&_=%s';
+        console.log(`try_time:${retry_time}`);
+        var login_url = 'login.weixin.qq.com';
+        var code;
+        var params = {
+            'tip': tip,
+            'uuid': uuid,
+            '_': Math.round(new Date().getTime()/1000),
+        }        
 
-    var req = https.request(options, (res) => {
-        //console.log(`2STATUS: ${res.statusCode}`);
-        //console.log(`HEADERS: ${JSON.stringify(res.headers)}`);
-        //console.log('headers: ', res.headers);
-        res.setEncoding('utf8');
-        res.on('data', (chunk) => {
-          var pattern = /window.code=(\d+);/;
-          pattern.test(chunk);
-          code = RegExp.$1;
-          console.log(`code inside:${code}`);
+        var paramsString = convertArrayToString(params);
+        var options = {
+            rejectUnauthorized:false,
+            agent:false,
+            //secureProtocol:'SSLv3_method',
+            hostname: login_url,
+            path: '/cgi-bin/mmwebwx-bin/login' + paramsString,
+            port: 443,
+            method: 'GET',
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (X11; Linux i686; U;) Gecko/20070322 Kazehakase/0.4.5'
+            }
+        };
+        console.log("https://login.weixin.qq.com" + options.path);
 
-          if (code == 408) {
-              //timeout
-              Console.log("---408---");
-              if(retry_time > 0){
-                  retry_time--;
-                  code = doRequest(uuid);
-              }else{
-                  return false;
-              }
-          }
-          return code;
-          //console.log('2headers: ', res.headers);
+        var req = https.request(options, (res) => {
+            res.setEncoding('utf8');
+            res.on('data', (chunk) => {
+                var pattern = /window.code=(\d+);/;
+                pattern.test(chunk);
+                code = RegExp.$1;
+                console.log(`code inside:${code}`);     
+            });
+
+            res.on('end', () => {
+                console.log(code);
+                if(code == 201){//scand
+                    tip = 0;
+                    console.log("scand");
+                    doRequest();
+                }else if(code == 200){//success
+                    resolve(200);
+                }else if(code == 408 && retry_time > 0){//timeout
+                    //req.abort();
+                    retry_time--;
+                    //res.resume();
+                    setTimeout(doRequest,1500);
+                }else{
+                    reject(408);
+                }
+                //console.log('2No more data in response.');
+            })
         });
 
-        res.on('end', () => {
-          console.log('2No more data in response.');
+        /*
+        req.on('socket',(socket)=>{
+            socket.emit('agentRemove');
+        });
+        */
+
+        req.on('error',(err)=>{
+            console.log(err);
+            if(retry_time > 0){
+                retry_time--;
+                console.log("request error",uuid);
+                var code = doRequest(uuid);
+                resolve(code);
+            }else{
+                console.log("timeout");
+                reject(407);
+            }
         })
+        
+        req.end();
+        
     });
-
-    req.on('error',()=>{
-        if(retry_time > 0){
-            retry_time--;
-            console.log("request error");
-            return doRequest(uuid);
-        }else{
-            console.log("timeout");
-            return 408;
-        }
-    })
-
-    req.end();
 }
 
-//app.on('ready',createWindow);
-
 app.on('ready',()=>{
-  createWindow();
-
   var promise = getUuid();
-  promise.then(createQRimage).then(doRequest);
 
+  promise.then(createQRimage).then(createWindow).then(doRequest).then((tmp_code)=>{
+      console.log(tmp_code);
+  },(error_code)=>{
+      console.log(error_code);
+  });
 
-  //createQRimage(uuid);
-  //wait4login(uuid);
 })
 
 app.on('window-all-closed',function(){
