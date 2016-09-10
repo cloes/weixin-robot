@@ -110,7 +110,6 @@ function doRequest(){
         var options = {
             rejectUnauthorized:false,
             agent:false,
-            //secureProtocol:'SSLv3_method',
             hostname: login_url,
             path: '/cgi-bin/mmwebwx-bin/login' + paramsString,
             port: 443,
@@ -124,9 +123,15 @@ function doRequest(){
         var req = https.request(options, (res) => {
             res.setEncoding('utf8');
             res.on('data', (chunk) => {
-                var pattern = /window.code=(\d+);/;
-                pattern.test(chunk);
+                var pattern_for_code = /window.code=(\d+);/;
+                pattern_for_code.test(chunk);
                 code = RegExp.$1;
+
+                var pattern_for_redirect_url = /window.redirect_uri=(\S+?);/;
+                pattern_for_redirect_url.test(chunk);
+                redirect_uri = RegExp.$1;
+
+                console.log(`redirect_uri is:${redirect_uri}`);
                 console.log(`code inside:${code}`);     
             });
 
@@ -137,7 +142,9 @@ function doRequest(){
                     console.log("scand");
                     doRequest();
                 }else if(code == 200){//success
-                    resolve(200);
+                    console.log("success");
+                    console.log(redirect_uri);
+                    
                 }else if(code == 408 && retry_time > 0){//timeout
                     //req.abort();
                     retry_time--;
@@ -150,11 +157,6 @@ function doRequest(){
             })
         });
 
-        /*
-        req.on('socket',(socket)=>{
-            socket.emit('agentRemove');
-        });
-        */
 
         req.on('error',(err)=>{
             console.log(err);
