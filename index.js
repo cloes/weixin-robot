@@ -10,6 +10,8 @@ const http = require('http');
 
 const url = require('url');
 
+const xml2js = require('xml2js');
+
 let mainWindow;
 
 let ipc = require('electron').ipcMain;
@@ -21,6 +23,9 @@ var uuid;
 var tip = 1;
 
 var redirect_uri;
+
+var skey,wxsid,wxuin,pass_ticket;
+
 
 function createWindow() {
     mainWindow = new BrowserWindow({width:800,height:600});
@@ -95,73 +100,6 @@ function createQRimage(){
     qr_png.pipe(require('fs').createWriteStream('login.png'));
 }
 
-
-/*
-function doRequest(resolve,reject){
-        console.log(`try_time:${retry_time}`);
-        var login_url = 'login.weixin.qq.com';
-        var code;
-        var params = {
-            'tip': tip,
-            'uuid': uuid,
-            '_': Math.round(new Date().getTime()/1000),
-        };
-
-        var paramsString = convertArrayToString(params);
-        var options = {
-            rejectUnauthorized:false,
-            agent:false,
-            hostname: login_url,
-            path: '/cgi-bin/mmwebwx-bin/login' + paramsString,
-            port: 443,
-            method: 'GET',
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (X11; Linux i686; U;) Gecko/20070322 Kazehakase/0.4.5'
-            }
-        };
-
-        var req = https.request(options, (res) => {
-            res.setEncoding('utf8');
-            res.on('data', (chunk) => {
-                var pattern_for_code = /window.code=(\d+);/;
-                pattern_for_code.test(chunk);
-                code = RegExp.$1;
-
-                var pattern_for_redirect_url = /window.redirect_uri=(\S+?);/;
-                pattern_for_redirect_url.test(chunk);
-                redirect_uri = RegExp.$1;
-
-                console.log(`redirect_uri is:${redirect_uri}`);
-                console.log(`code inside:${code}`);     
-            });
-
-            res.on('end', () => {
-                console.log(code);
-                if(code == 201){//scand
-                    tip = 0;
-                    console.log("scand");
-                    doRequest();
-
-                }else if(code == 200){//success
-                    console.log("success");
-                    console.log(redirect_uri);
-                    resolve();
-                }else if(code == 408 && retry_time > 0){//timeout
-                    retry_time--;
-                    setTimeout(doRequest,1000);
-                }else{
-                    reject(408);
-                }
-            })
-        });
-
-        req.on('error',(err)=>{
-            console.log(err);
-        })
-        
-        req.end();
-}
-*/
 
 function doRequestPromise(){
     return new Promise(function(resolve, reject){
@@ -239,21 +177,29 @@ function login(){
         method: 'GET',
     }
 
-    console.log(options);
-
     var req = https.request(options, (res) => {
         res.setEncoding('utf8');
         res.on('data', (chunk) => {
-            console.log(chunk);
+            parser = new xml2js.Parser();
+            parser.parseString(chunk, function (err, result) {
+                skey = result.error.skey;
+                wxsid = result.error.wxsid;
+                wxuin = result.error.wxuin;
+                pass_ticket = result.error.pass_ticket;
+            });
         });
 
-        res.on('end', () => {
-            
-        })
+        res.on('end', () => {});
     });
 
     req.end();
+}
 
+function getSyncKey(){
+    var pattern_for_hostname = /https:\/\/(.*)\/cgi-bin/;
+    pattern_for_hostname.test(redirect_uri);
+    var hostname = RegExp.$1;
+    console.log(hostname);
 
 }
 
@@ -262,7 +208,7 @@ app.on('ready',()=>{
 
   promise.then(createQRimage).then(createWindow).then(doRequestPromise).then(login,(reject_code)=>{
       console.log(`reject_code is:${reject_code}`);
-  });
+  }).then(getSyncKey);
 
 })
 
