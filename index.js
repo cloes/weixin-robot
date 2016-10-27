@@ -26,6 +26,8 @@ var redirect_uri;
 
 var skey,wxsid,wxuin,pass_ticket;
 
+var device_id;
+
 
 function createWindow() {
     mainWindow = new BrowserWindow({width:800,height:600});
@@ -167,46 +169,91 @@ function doRequestPromise(){
 }
 
 
-function login(){
-    var redirect_uri_object = url.parse(redirect_uri);
-    console.log("login");
-    console.log(redirect_uri);
-    var options = {
-        hostname: redirect_uri_object.hostname,
-        path: redirect_uri_object.path,
-        method: 'GET',
-    }
+function loginPromise(){
+    return new Promise(function(resolve, reject){
+        var redirect_uri_object = url.parse(redirect_uri);
+        console.log("login");
 
-    var req = https.request(options, (res) => {
-        res.setEncoding('utf8');
-        res.on('data', (chunk) => {
-            parser = new xml2js.Parser();
-            parser.parseString(chunk, function (err, result) {
-                skey = result.error.skey;
-                wxsid = result.error.wxsid;
-                wxuin = result.error.wxuin;
-                pass_ticket = result.error.pass_ticket;
+        var options = {
+            hostname: redirect_uri_object.hostname,
+            path: redirect_uri_object.path,
+            method: 'GET',
+        };
+
+        var req = https.request(options, (res) => {
+            res.setEncoding('utf8');
+            res.on('data', (chunk) => {
+                parser = new xml2js.Parser();
+                parser.parseString(chunk, function (err, result) {
+                    skey = result.error.skey[0];
+                    wxsid = result.error.wxsid[0];
+                    wxuin = result.error.wxuin[0];
+                    pass_ticket = result.error.pass_ticket[0];
+                });
+            });
+
+            res.on('end', () => {
+                resolve();
             });
         });
 
-        res.on('end', () => {});
+        req.end();
     });
-
-    req.end();
 }
 
-function getSyncKey(){
-    var pattern_for_hostname = /https:\/\/(.*)\/cgi-bin/;
-    pattern_for_hostname.test(redirect_uri);
-    var hostname = RegExp.$1;
-    console.log(hostname);
 
+function getSyncKey(){
+    deviceID = Math.floor(Math.random() * 1000000000000000);
+
+    var postData = JSON.stringify({
+        "BaseRequest":{
+            "Uin":wxuin,
+            "Sid":wxsid,
+            "Skey":skey,
+            "DeviceID":device_id
+        }
+    });
+
+    console.log(postData);
+
+    var redirect_uri_object = url.parse(redirect_uri);
+    var timestamp = new Date().getTime();
+    timestamp = timestamp.toString().substr(0,10);
+
+    var options = {
+        hostname: redirect_uri_object.hostname,
+        path: "/webwxinit?r=" + timestamp + "&lang=en_US&pass_ticket=" + pass_ticket,
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': postData.length,
+        }
+    }
+
+    console.log(options);
+
+    /*
+    var req = https.request(options, (res) => {
+        console.log(`STATUS: ${res.statusCode}`);
+        console.log(`HEADERS: ${JSON.stringify(res.headers)}`);
+        res.setEncoding('utf8');
+        res.on('data', (chunk) => {
+            console.log(`BODY: ${chunk}`);
+        });
+        res.on('end', () => {
+            console.log('No more data in response.');
+        });
+    });
+
+    req.write(postData);
+    req.end();
+    */
 }
 
 app.on('ready',()=>{
   var promise = getUuid();
 
-  promise.then(createQRimage).then(createWindow).then(doRequestPromise).then(login,(reject_code)=>{
+  promise.then(createQRimage).then(createWindow).then(doRequestPromise).then(loginPromise,(reject_code)=>{
       console.log(`reject_code is:${reject_code}`);
   }).then(getSyncKey);
 
