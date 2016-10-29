@@ -172,7 +172,6 @@ function doRequestPromise(){
 function loginPromise(){
     return new Promise(function(resolve, reject){
         var redirect_uri_object = url.parse(redirect_uri);
-        console.log("login");
 
         var options = {
             hostname: redirect_uri_object.hostname,
@@ -214,31 +213,28 @@ function getSyncKey(){
         }
     });
 
-    console.log(postData);
-
     var redirect_uri_object = url.parse(redirect_uri);
     var timestamp = new Date().getTime();
     timestamp = timestamp.toString().substr(0,10);
 
     var options = {
+        //rejectUnauthorized:true,
+        agent:false,
         hostname: redirect_uri_object.hostname,
-        path: "/webwxinit?r=" + timestamp + "&lang=en_US&pass_ticket=" + pass_ticket,
+        path: "/cgi-bin/mmwebwx-bin/webwxinit?r=" + timestamp + "&lang=en_US&pass_ticket=" + pass_ticket,
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'Content-Length': postData.length,
         }
     }
-
-    console.log(options);
-
-    /*
+    
     var req = https.request(options, (res) => {
         console.log(`STATUS: ${res.statusCode}`);
         console.log(`HEADERS: ${JSON.stringify(res.headers)}`);
         res.setEncoding('utf8');
         res.on('data', (chunk) => {
-            console.log(`BODY: ${chunk}`);
+            //console.log(`BODY: ${chunk}`);
         });
         res.on('end', () => {
             console.log('No more data in response.');
@@ -247,7 +243,7 @@ function getSyncKey(){
 
     req.write(postData);
     req.end();
-    */
+    
 }
 
 app.on('ready',()=>{
