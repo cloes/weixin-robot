@@ -1,5 +1,7 @@
 const electron = require('electron');
 
+const fs = require('fs');
+
 const app = electron.app;
 
 const BrowserWindow = electron.BrowserWindow;
@@ -27,6 +29,8 @@ var redirect_uri;
 var skey,wxsid,wxuin,pass_ticket;
 
 var device_id;
+
+var syncKey = "";
 
 
 function createWindow() {
@@ -203,6 +207,7 @@ function loginPromise(){
 
 function getSyncKey(){
     deviceID = Math.floor(Math.random() * 1000000000000000);
+    var res_message = "";
 
     var postData = JSON.stringify({
         "BaseRequest":{
@@ -234,16 +239,29 @@ function getSyncKey(){
         console.log(`HEADERS: ${JSON.stringify(res.headers)}`);
         res.setEncoding('utf8');
         res.on('data', (chunk) => {
-            //console.log(`BODY: ${chunk}`);
+            res_message += chunk;
         });
         res.on('end', () => {
             console.log('No more data in response.');
+            fs.writeFile('message.txt', res_message, 'utf8', ()=>{
+                console.log("wirte message finish!");
+            });
+
+            res_obj = JSON.parse(res_message);
+            console.log(res_obj.SyncKey);
+
+            for(var i = 0; i < res_obj.SyncKey.Count; i++){
+                syncKey += res_obj.SyncKey.List[i].Key + "_" + res_obj.SyncKey.List[i].Val + "|";
+            }
+            syncKey = syncKey.substr(0, syncKey.length - 1);
         });
     });
 
     req.write(postData);
     req.end();
-    
+
+
+
 }
 
 app.on('ready',()=>{
