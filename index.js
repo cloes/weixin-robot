@@ -32,6 +32,10 @@ var device_id;
 
 var syncKey = "";
 
+var baseParams;
+
+var myAccount;
+
 
 function createWindow() {
     mainWindow = new BrowserWindow({width:800,height:600});
@@ -192,6 +196,14 @@ function loginPromise(){
                     wxsid = result.error.wxsid[0];
                     wxuin = result.error.wxuin[0];
                     pass_ticket = result.error.pass_ticket[0];
+
+                    device_id = Math.floor(Math.random() * 1000000000000000);
+                    baseParams = {
+                        "Uin":wxuin,
+                        "Sid":wxsid,
+                        "Skey":skey,
+                        "DeviceID":device_id
+                    };
                 });
             });
 
@@ -206,70 +218,97 @@ function loginPromise(){
 
 
 function getSyncKey(){
-    deviceID = Math.floor(Math.random() * 1000000000000000);
-    var res_message = "";
+    return new Promise(function(resolve, reject){
+        
+        var res_message = "";
 
-    var postData = JSON.stringify({
-        "BaseRequest":{
-            "Uin":wxuin,
-            "Sid":wxsid,
-            "Skey":skey,
-            "DeviceID":device_id
-        }
-    });
-
-    var redirect_uri_object = url.parse(redirect_uri);
-    var timestamp = new Date().getTime();
-    timestamp = timestamp.toString().substr(0,10);
-
-    var options = {
-        //rejectUnauthorized:true,
-        agent:false,
-        hostname: redirect_uri_object.hostname,
-        path: "/cgi-bin/mmwebwx-bin/webwxinit?r=" + timestamp + "&lang=en_US&pass_ticket=" + pass_ticket,
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Content-Length': postData.length,
-        }
-    }
-    
-    var req = https.request(options, (res) => {
-        console.log(`STATUS: ${res.statusCode}`);
-        console.log(`HEADERS: ${JSON.stringify(res.headers)}`);
-        res.setEncoding('utf8');
-        res.on('data', (chunk) => {
-            res_message += chunk;
+        var postData = JSON.stringify({
+            "BaseRequest":baseParams
         });
-        res.on('end', () => {
-            console.log('No more data in response.');
-            fs.writeFile('message.txt', res_message, 'utf8', ()=>{
-                console.log("wirte message finish!");
-            });
 
-            res_obj = JSON.parse(res_message);
-            console.log(res_obj.SyncKey);
+        var redirect_uri_object = url.parse(redirect_uri);
+        var timestamp = new Date().getTime();
+        timestamp = timestamp.toString().substr(0,10);
 
-            for(var i = 0; i < res_obj.SyncKey.Count; i++){
-                syncKey += res_obj.SyncKey.List[i].Key + "_" + res_obj.SyncKey.List[i].Val + "|";
+        var options = {
+            //rejectUnauthorized:true,
+            agent:false,
+            hostname: redirect_uri_object.hostname,
+            path: "/cgi-bin/mmwebwx-bin/webwxinit?r=" + timestamp + "&lang=en_US&pass_ticket=" + pass_ticket,
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': postData.length,
             }
-            syncKey = syncKey.substr(0, syncKey.length - 1);
+        }
+        
+        var req = https.request(options, (res) => {
+            res.setEncoding('utf8');
+            res.on('data', (chunk) => {
+                res_message += chunk;
+            });
+            res.on('end', () => {
+                
+                console.log('No more data in response.');
+                fs.writeFile('message.txt', res_message, 'utf8', ()=>{
+                    console.log("wirte message finish!");
+                });
+                
+                res_obj = JSON.parse(res_message);
+                myAccount = res_obj.User;
+
+                for(var i = 0; i < res_obj.SyncKey.Count; i++){
+                    syncKey += res_obj.SyncKey.List[i].Key + "_" + res_obj.SyncKey.List[i].Val + "|";
+                }
+                syncKey = syncKey.substr(0, syncKey.length - 1);
+                if(res_obj.BaseResponse.Ret == 0){
+                    console.log("get SyncKey success");
+                    resolve();
+                }else{
+                    console.log("get SyncKey fail");
+                    reject();
+                }
+            });
         });
+        //console.log(postData);
+        req.write(postData);
+        req.end();
     });
-
-    req.write(postData);
-    req.end();
-
-
-
 }
+
+
+function statusNotify(){
+        var timestamp = new Date().getTime();
+        var clientMsgId = timestamp.toString().substr(0,10);
+        var postData = {
+            "BaseRequest": baseParams,
+            "Code": 3,
+            "FromUserName": myAccount.UserName,
+            "ToUserName": myAccount.UserName,
+            "ClientMsgId":clientMsgId,
+        };
+        console.log(postData);
+
+        var options = {
+            //rejectUnauthorized:true,
+            agent:false,
+            hostname: redirect_uri_object.hostname,
+            path: "/cgi-bin/mmwebwx-bin/webwxstatusnotify?lang=zh_CN&pass_ticket=" + pass_ticket,
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': postData.length,
+            }
+        };
+}
+
 
 app.on('ready',()=>{
   var promise = getUuid();
 
   promise.then(createQRimage).then(createWindow).then(doRequestPromise).then(loginPromise,(reject_code)=>{
       console.log(`reject_code is:${reject_code}`);
-  }).then(getSyncKey);
+  }).then(getSyncKey).then(statusNotify);
 
 })
 
