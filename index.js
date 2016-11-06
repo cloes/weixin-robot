@@ -36,6 +36,7 @@ var baseParams;
 
 var myAccount;
 
+var redirectUriObject
 
 function createWindow() {
     mainWindow = new BrowserWindow({width:800,height:600});
@@ -146,6 +147,7 @@ function doRequestPromise(){
                     var pattern_for_redirect_url = /window.redirect_uri="(\S+?)";/;
                     pattern_for_redirect_url.test(chunk);
                     redirect_uri = RegExp.$1;
+                    redirectUriObject = url.parse(redirect_uri);
                 });
 
                 res.on('end', () => {
@@ -179,11 +181,11 @@ function doRequestPromise(){
 
 function loginPromise(){
     return new Promise(function(resolve, reject){
-        var redirect_uri_object = url.parse(redirect_uri);
+        //var redirectUriObject = url.parse(redirect_uri);
 
         var options = {
-            hostname: redirect_uri_object.hostname,
-            path: redirect_uri_object.path,
+            hostname: redirectUriObject.hostname,
+            path: redirectUriObject.path,
             method: 'GET',
         };
 
@@ -221,19 +223,18 @@ function getSyncKey(){
     return new Promise(function(resolve, reject){
         
         var res_message = "";
-
         var postData = JSON.stringify({
             "BaseRequest":baseParams
         });
 
-        var redirect_uri_object = url.parse(redirect_uri);
+        //var redirectUriObject = url.parse(redirect_uri);
         var timestamp = new Date().getTime();
         timestamp = timestamp.toString().substr(0,10);
 
         var options = {
             //rejectUnauthorized:true,
             agent:false,
-            hostname: redirect_uri_object.hostname,
+            hostname: redirectUriObject.hostname,
             path: "/cgi-bin/mmwebwx-bin/webwxinit?r=" + timestamp + "&lang=en_US&pass_ticket=" + pass_ticket,
             method: 'POST',
             headers: {
@@ -280,19 +281,20 @@ function getSyncKey(){
 function statusNotify(){
         var timestamp = new Date().getTime();
         var clientMsgId = timestamp.toString().substr(0,10);
-        var postData = {
+        var postData = JSON.stringify({
             "BaseRequest": baseParams,
             "Code": 3,
             "FromUserName": myAccount.UserName,
             "ToUserName": myAccount.UserName,
             "ClientMsgId":clientMsgId,
-        };
+        });
         console.log(postData);
+        console.log(redirectUriObject.hostname);
 
         var options = {
             //rejectUnauthorized:true,
             agent:false,
-            hostname: redirect_uri_object.hostname,
+            hostname: redirectUriObject.hostname,
             path: "/cgi-bin/mmwebwx-bin/webwxstatusnotify?lang=zh_CN&pass_ticket=" + pass_ticket,
             method: 'POST',
             headers: {
@@ -300,6 +302,23 @@ function statusNotify(){
                 'Content-Length': postData.length,
             }
         };
+
+        var res_message = "";
+        var resObj;
+        var req = https.request(options, (res) => {
+            res.setEncoding('utf8');
+            res.on('data', (chunk) => {
+                res_message += chunk;
+            });
+            res.on('end', () => {
+                console.log('No more data in response22.');
+                resObj = JSON.parse(res_message);
+                //console.log(resObj.BaseResponse.Ret);
+            });
+        });
+
+        req.write(postData);
+        req.end();
 }
 
 
