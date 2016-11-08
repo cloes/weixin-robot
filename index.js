@@ -36,7 +36,9 @@ var baseParams;
 
 var myAccount;
 
-var redirectUriObject
+var redirectUriObject;
+
+var statusNotifyResult
 
 function createWindow() {
     mainWindow = new BrowserWindow({width:800,height:600});
@@ -221,7 +223,6 @@ function loginPromise(){
 
 function getSyncKey(){
     return new Promise(function(resolve, reject){
-        
         var res_message = "";
         var postData = JSON.stringify({
             "BaseRequest":baseParams
@@ -249,7 +250,6 @@ function getSyncKey(){
                 res_message += chunk;
             });
             res.on('end', () => {
-                
                 console.log('No more data in response.');
                 fs.writeFile('message.txt', res_message, 'utf8', ()=>{
                     console.log("wirte message finish!");
@@ -279,6 +279,9 @@ function getSyncKey(){
 
 
 function statusNotify(){
+     return new Promise(function(resolve, reject){
+        var res_message = "";
+        var resObj;
         var timestamp = new Date().getTime();
         var clientMsgId = timestamp.toString().substr(0,10);
         var postData = JSON.stringify({
@@ -288,8 +291,6 @@ function statusNotify(){
             "ToUserName": myAccount.UserName,
             "ClientMsgId":clientMsgId,
         });
-        console.log(postData);
-        console.log(redirectUriObject.hostname);
 
         var options = {
             //rejectUnauthorized:true,
@@ -303,8 +304,6 @@ function statusNotify(){
             }
         };
 
-        var res_message = "";
-        var resObj;
         var req = https.request(options, (res) => {
             res.setEncoding('utf8');
             res.on('data', (chunk) => {
@@ -313,12 +312,62 @@ function statusNotify(){
             res.on('end', () => {
                 console.log('No more data in response22.');
                 resObj = JSON.parse(res_message);
-                //console.log(resObj.BaseResponse.Ret);
+                statusNotifyResult = resObj.BaseResponse.Ret;
+                console.log(statusNotifyResult);
+                if(statusNotifyResult == 0){
+                    resolve();
+                }else{
+                    reject();
+                }
             });
         });
 
         req.write(postData);
         req.end();
+     });
+}
+
+function getContact(){
+    console.log("getContact");
+    var res_message = "";
+    var resObj;
+    var timestamp = new Date().getTime();
+    var r = timestamp.toString().substr(0,10);
+
+    var postData = JSON.stringify({});
+
+    var options = {
+        //rejectUnauthorized:true,
+        agent:false,
+        hostname: redirectUriObject.hostname,
+        path: "/cgi-bin/mmwebwx-bin/webwxgetcontact?pass_ticket=" + pass_ticket + "&skey=" + skey + "&r=" + r,
+        method: 'POST',
+
+        headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': postData.length,
+            'Cookie': "wxsid=" + wxsid + "; " + "wxuin=" + wxuin
+        }
+    };
+
+    console.log(options);
+
+    var req = https.request(options, (res) => {
+        res.setEncoding('utf8');
+        res.on('data', (chunk) => {
+            res_message += chunk;
+        });
+        res.on('end', () => {
+            console.log('No more data in response from getContact.');
+            fs.writeFile('contact.txt', res_message, 'utf8', ()=>{
+                console.log("wirte contact finish!");
+            });
+            //resObj = JSON.parse(res_message);
+        });
+    });
+
+    req.write(postData);
+    req.end();
 }
 
 
@@ -327,7 +376,7 @@ app.on('ready',()=>{
 
   promise.then(createQRimage).then(createWindow).then(doRequestPromise).then(loginPromise,(reject_code)=>{
       console.log(`reject_code is:${reject_code}`);
-  }).then(getSyncKey).then(statusNotify);
+  }).then(getSyncKey).then(statusNotify).then(getContact);
 
 })
 
