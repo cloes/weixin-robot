@@ -333,6 +333,7 @@ function getContact(){
     var resObj;
     var timestamp = new Date().getTime();
     var r = timestamp.toString().substr(0,10);
+    var memberList;
 
     var postData = JSON.stringify({});
 
@@ -362,7 +363,14 @@ function getContact(){
             fs.writeFile('contact.txt', res_message, 'utf8', ()=>{
                 console.log("wirte contact finish!");
             });
-            //resObj = JSON.parse(res_message);
+            resObj = JSON.parse(res_message);
+            memberList = resObj.MemberList;
+            memberList.forEach((element)=>{
+                if(element.UserName.substr(0,2) === "@@"){
+                    console.log("群");
+                }
+            });
+
         });
     });
 
