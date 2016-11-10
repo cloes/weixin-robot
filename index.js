@@ -38,7 +38,9 @@ var myAccount;
 
 var redirectUriObject;
 
-var statusNotifyResult
+var statusNotifyResult;
+
+var groupList = new Array();
 
 function createWindow() {
     mainWindow = new BrowserWindow({width:800,height:600});
@@ -271,7 +273,6 @@ function getSyncKey(){
                 }
             });
         });
-        //console.log(postData);
         req.write(postData);
         req.end();
     });
@@ -313,7 +314,6 @@ function statusNotify(){
                 console.log('No more data in response22.');
                 resObj = JSON.parse(res_message);
                 statusNotifyResult = resObj.BaseResponse.Ret;
-                console.log(statusNotifyResult);
                 if(statusNotifyResult == 0){
                     resolve();
                 }else{
@@ -328,30 +328,90 @@ function statusNotify(){
 }
 
 function getContact(){
-    console.log("getContact");
-    var res_message = "";
-    var resObj;
+    return new Promise(function(resolve, reject){
+        var res_message = "";
+        var resObj;
+        var timestamp = new Date().getTime();
+        var r = timestamp.toString().substr(0,10);
+        var memberList;
+
+        var postData = JSON.stringify({});
+
+        var options = {
+            //rejectUnauthorized:true,
+            agent:false,
+            hostname: redirectUriObject.hostname,
+            path: "/cgi-bin/mmwebwx-bin/webwxgetcontact?pass_ticket=" + pass_ticket + "&skey=" + skey + "&r=" + r,
+            method: 'POST',
+
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': postData.length,
+                'Cookie': "wxsid=" + wxsid + "; " + "wxuin=" + wxuin
+            }
+        };
+
+        var req = https.request(options, (res) => {
+            res.setEncoding('utf8');
+            res.on('data', (chunk) => {
+                res_message += chunk;
+            });
+            res.on('end', () => {
+                console.log('No more data in response from getContact.');
+                fs.writeFile('contact.txt', res_message, 'utf8', ()=>{
+                    console.log("wirte contact finish!");
+                });
+                resObj = JSON.parse(res_message);
+                memberList = resObj.MemberList;
+
+                memberList.forEach((element)=>{
+                    if(element.UserName.substr(0,2) === "@@"){
+                        groupList.push(element);
+                        fs.appendFile('groupList.txt', element.UserName + "\r\n", 'utf8', ()=>{
+                            console.log("appendFile groupList finish!");
+                        });
+                    }
+                });
+                resolve();
+            });
+        });
+
+        req.write(postData);
+        req.end();
+    });
+    
+}
+
+function getAllGroupMembers(){
+    var res_message;
     var timestamp = new Date().getTime();
     var r = timestamp.toString().substr(0,10);
-    var memberList;
+    var groupNameList = new Array();
+    groupList.forEach((element)=>{
+        groupNameList.push({
+            "UserName": element.UserName,
+            "EncryChatRoomId": "",
+        });
+    });
 
-    var postData = JSON.stringify({});
+    var postData = {
+        "BaseRequest": baseParams,
+        "Count": groupList.length,
+        "List":groupNameList,
+    };
 
     var options = {
         //rejectUnauthorized:true,
         agent:false,
         hostname: redirectUriObject.hostname,
-        path: "/cgi-bin/mmwebwx-bin/webwxgetcontact?pass_ticket=" + pass_ticket + "&skey=" + skey + "&r=" + r,
+        path: "/cgi-bin/mmwebwx-bin/webwxbatchgetcontact?type=ex&r=" + r +"&pass_ticket=" + pass_ticket,
         method: 'POST',
-
         headers: {
             'Content-Type': 'application/json',
             'Content-Length': postData.length,
             'Cookie': "wxsid=" + wxsid + "; " + "wxuin=" + wxuin
         }
     };
-
-    console.log(options);
 
     var req = https.request(options, (res) => {
         res.setEncoding('utf8');
@@ -360,22 +420,11 @@ function getContact(){
         });
         res.on('end', () => {
             console.log('No more data in response from getContact.');
-            fs.writeFile('contact.txt', res_message, 'utf8', ()=>{
-                console.log("wirte contact finish!");
-            });
-            resObj = JSON.parse(res_message);
-            memberList = resObj.MemberList;
-            memberList.forEach((element)=>{
-                if(element.UserName.substr(0,2) === "@@"){
-                    console.log("群");
-                }
-            });
 
+            //resolve();
         });
     });
 
-    req.write(postData);
-    req.end();
 }
 
 
@@ -384,7 +433,7 @@ app.on('ready',()=>{
 
   promise.then(createQRimage).then(createWindow).then(doRequestPromise).then(loginPromise,(reject_code)=>{
       console.log(`reject_code is:${reject_code}`);
-  }).then(getSyncKey).then(statusNotify).then(getContact);
+  }).then(getSyncKey).then(statusNotify).then(getContact).then(getAllGroupMembers);
 
 })
 
