@@ -42,6 +42,10 @@ var statusNotifyResult;
 
 var groupList = new Array();
 
+var groupMembers = {};
+
+var encryChatRoomId = {};
+
 function createWindow() {
     mainWindow = new BrowserWindow({width:800,height:600});
 
@@ -383,7 +387,8 @@ function getContact(){
 }
 
 function getAllGroupMembers(){
-    var res_message;
+    var resObj;
+    var res_message = "";
     var timestamp = new Date().getTime();
     var r = timestamp.toString().substr(0,10);
     var groupNameList = new Array();
@@ -399,6 +404,7 @@ function getAllGroupMembers(){
         "Count": groupList.length,
         "List":groupNameList,
     };
+    postData = JSON.stringify(postData);
 
     var options = {
         //rejectUnauthorized:true,
@@ -419,12 +425,30 @@ function getAllGroupMembers(){
             res_message += chunk;
         });
         res.on('end', () => {
-            console.log('No more data in response from getContact.');
+            console.log('No more data in response from getAllGroupMembers.');
+            fs.writeFile('AllGroupMembers.txt', res_message, 'utf8', ()=>{
+                console.log("wirte AllGroupMembers finish!");
+            });
+            resObj = JSON.parse(res_message);
+            resObj.ContactList.forEach((element)=>{
+                groupMembers[element.UserName] = element.MemberList;
+                encryChatRoomId[element.UserName] = element.EncryChatRoomId;
+            });
+            
+            fs.writeFile('groupMembers.txt', JSON.stringify(groupMembers), 'utf8', ()=>{
+                console.log("wirte groupMembers finish!");
+            });
 
+            fs.writeFile('encryChatRoomId.txt', JSON.stringify(encryChatRoomId), 'utf8', ()=>{
+                console.log("wirte encryChatRoomId finish!");
+            });
+            
             //resolve();
         });
     });
 
+    req.write(postData);
+    req.end();
 }
 
 
