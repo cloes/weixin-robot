@@ -14,6 +14,8 @@ const url = require('url');
 
 const xml2js = require('xml2js');
 
+const querystring = require('querystring');
+
 let mainWindow;
 
 let ipc = require('electron').ipcMain;
@@ -45,6 +47,8 @@ var groupList = new Array();
 var groupMembers = {};
 
 var encryChatRoomId = {};
+
+var host = ["webpush", "webpush2"];
 
 function createWindow() {
     mainWindow = new BrowserWindow({width:800,height:600});
@@ -387,77 +391,132 @@ function getContact(){
 }
 
 function getAllGroupMembers(){
-    var resObj;
-    var res_message = "";
-    var timestamp = new Date().getTime();
-    var r = timestamp.toString().substr(0,10);
-    var groupNameList = new Array();
-    groupList.forEach((element)=>{
-        groupNameList.push({
-            "UserName": element.UserName,
-            "EncryChatRoomId": "",
+    return new Promise(function(resolve, reject){
+        var resObj;
+        var res_message = "";
+        var timestamp = new Date().getTime();
+        var r = timestamp.toString().substr(0,10);
+        var groupNameList = new Array();
+        groupList.forEach((element)=>{
+            groupNameList.push({
+                "UserName": element.UserName,
+                "EncryChatRoomId": "",
+            });
         });
+
+        var postData = {
+            "BaseRequest": baseParams,
+            "Count": groupList.length,
+            "List":groupNameList,
+        };
+        postData = JSON.stringify(postData);
+
+        var options = {
+            //rejectUnauthorized:true,
+            agent:false,
+            hostname: redirectUriObject.hostname,
+            path: "/cgi-bin/mmwebwx-bin/webwxbatchgetcontact?type=ex&r=" + r +"&pass_ticket=" + pass_ticket,
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': postData.length,
+                'Cookie': "wxsid=" + wxsid + "; " + "wxuin=" + wxuin
+            }
+        };
+
+        var req = https.request(options, (res) => {
+            res.setEncoding('utf8');
+            res.on('data', (chunk) => {
+                res_message += chunk;
+            });
+            res.on('end', () => {
+                console.log('No more data in response from getAllGroupMembers.');
+                fs.writeFile('AllGroupMembers.txt', res_message, 'utf8', ()=>{
+                    console.log("wirte AllGroupMembers finish!");
+                });
+                resObj = JSON.parse(res_message);
+                resObj.ContactList.forEach((element)=>{
+                    groupMembers[element.UserName] = element.MemberList;
+                    encryChatRoomId[element.UserName] = element.EncryChatRoomId;
+                });
+                
+                fs.writeFile('groupMembers.txt', JSON.stringify(groupMembers), 'utf8', ()=>{
+                    console.log("wirte groupMembers finish!");
+                });
+
+                fs.writeFile('encryChatRoomId.txt', JSON.stringify(encryChatRoomId), 'utf8', ()=>{
+                    console.log("wirte encryChatRoomId finish!");
+                });
+                
+                resolve();
+            });
+        });
+
+        req.write(postData);
+        req.end();
     });
+}
 
-    var postData = {
-        "BaseRequest": baseParams,
-        "Count": groupList.length,
-        "List":groupNameList,
+function testSync(){
+    var resMessage = "";
+    var timestamp = new Date().getTime();
+    var timestamp = timestamp.toString().substr(0,10);
+    var params = {
+        'r': timestamp,
+        'sid': wxsid,
+        'uin': wxuin,
+        'skey': skey,
+        'deviceid': device_id,
+        'synckey': syncKey,
+        '_': timestamp,
     };
-    postData = JSON.stringify(postData);
 
+    var paramsString = querystring.stringify(params);
     var options = {
         //rejectUnauthorized:true,
         agent:false,
-        hostname: redirectUriObject.hostname,
-        path: "/cgi-bin/mmwebwx-bin/webwxbatchgetcontact?type=ex&r=" + r +"&pass_ticket=" + pass_ticket,
-        method: 'POST',
+        path: "/cgi-bin/mmwebwx-bin/synccheck?" + paramsString,
+        method: 'GET',
+        timeout: 60000,
         headers: {
             'Content-Type': 'application/json',
-            'Content-Length': postData.length,
             'Cookie': "wxsid=" + wxsid + "; " + "wxuin=" + wxuin
         }
     };
 
-    var req = https.request(options, (res) => {
-        res.setEncoding('utf8');
-        res.on('data', (chunk) => {
-            res_message += chunk;
-        });
-        res.on('end', () => {
-            console.log('No more data in response from getAllGroupMembers.');
-            fs.writeFile('AllGroupMembers.txt', res_message, 'utf8', ()=>{
-                console.log("wirte AllGroupMembers finish!");
-            });
-            resObj = JSON.parse(res_message);
-            resObj.ContactList.forEach((element)=>{
-                groupMembers[element.UserName] = element.MemberList;
-                encryChatRoomId[element.UserName] = element.EncryChatRoomId;
-            });
-            
-            fs.writeFile('groupMembers.txt', JSON.stringify(groupMembers), 'utf8', ()=>{
-                console.log("wirte groupMembers finish!");
-            });
+    console.log(options);
 
-            fs.writeFile('encryChatRoomId.txt', JSON.stringify(encryChatRoomId), 'utf8', ()=>{
-                console.log("wirte encryChatRoomId finish!");
+    host.forEach((element)=>{
+        options.hostname = element + ".weixin.qq.com";
+        var req = https.request(options, (res) => {
+            res.setEncoding('utf8');
+            res.on('data', (chunk) => {
+                resMessage += chunk;
             });
-            
-            //resolve();
+            res.on('end', () => {
+                console.log("=================");
+                console.log(resMessage);
+                console.log("=================");
+            });
         });
     });
-
-    req.write(postData);
-    req.end();
 }
 
+
+function processMessage(){
+
+}
 
 app.on('ready',()=>{
   var promise = getUuid();
 
   promise.then(createQRimage).then(createWindow).then(doRequestPromise).then(loginPromise,(reject_code)=>{
       console.log(`reject_code is:${reject_code}`);
-  }).then(getSyncKey).then(statusNotify).then(getContact).then(getAllGroupMembers);
+  }).then(getSyncKey)
+  .then(statusNotify)
+  .then(getContact)
+  .then(getAllGroupMembers)
+  .then(testSync);
 
 })
 
