@@ -50,6 +50,8 @@ var encryChatRoomId = {};
 
 var host = ["webpush", "webpush2"];
 
+var cookies = "";
+
 function createWindow() {
     mainWindow = new BrowserWindow({width:800,height:600});
 
@@ -202,6 +204,16 @@ function loginPromise(){
         var req = https.request(options, (res) => {
             res.setEncoding('utf8');
             res.on('data', (chunk) => {
+                var loginCookies = res.headers['set-cookie'];
+                loginCookies.forEach((element)=>{
+                    var pattern = /^(\w+)=([a-z0-9A-Z_\+=/]+);/;
+                    pattern.test(element);
+                    var key = RegExp.$1;
+                    var value = RegExp.$2;
+                    cookies += key + "=" + value + "; ";
+                });
+                cookies = cookies.substr(0, cookies.length - 2);
+
                 parser = new xml2js.Parser();
                 parser.parseString(chunk, function (err, result) {
                     skey = result.error.skey[0];
@@ -235,8 +247,6 @@ function getSyncKey(){
         var postData = JSON.stringify({
             "BaseRequest":baseParams
         });
-
-        //var redirectUriObject = url.parse(redirect_uri);
         var timestamp = new Date().getTime();
         timestamp = timestamp.toString().substr(0,10);
 
@@ -353,7 +363,7 @@ function getContact(){
             headers: {
                 'Content-Type': 'application/json',
                 'Content-Length': postData.length,
-                'Cookie': "wxsid=" + wxsid + "; " + "wxuin=" + wxuin
+                'Cookie': cookies,
             }
         };
 
@@ -483,7 +493,7 @@ function testSync(){
         timeout: 60000,
         headers: {
             //'Content-Type': 'application/json',
-            'Cookie': "wxsid=" + wxsid + "; " + "wxuin=" + wxuin
+            'Cookie': cookies,
         }
     };
 
