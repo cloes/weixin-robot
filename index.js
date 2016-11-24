@@ -192,9 +192,7 @@ function doRequestPromise(){
 
 
 function loginPromise(){
-    return new Promise(function(resolve, reject){
-        //var redirectUriObject = url.parse(redirect_uri);
-
+    return new Promise(function(resolve, reject){       
         var options = {
             hostname: redirectUriObject.hostname,
             path: redirectUriObject.path,
@@ -319,7 +317,7 @@ function statusNotify(){
                 res_message += chunk;
             });
             res.on('end', () => {
-                console.log('No more data in response22.');
+                console.log('No more data in statusNotify.');
                 resObj = JSON.parse(res_message);
                 statusNotifyResult = resObj.BaseResponse.Ret;
                 if(statusNotifyResult == 0){
@@ -431,15 +429,17 @@ function getAllGroupMembers(){
             });
             res.on('end', () => {
                 console.log('No more data in response from getAllGroupMembers.');
+                /*
                 fs.writeFile('AllGroupMembers.txt', res_message, 'utf8', ()=>{
                     console.log("wirte AllGroupMembers finish!");
                 });
+                */
                 resObj = JSON.parse(res_message);
                 resObj.ContactList.forEach((element)=>{
                     groupMembers[element.UserName] = element.MemberList;
                     encryChatRoomId[element.UserName] = element.EncryChatRoomId;
                 });
-                
+                /*
                 fs.writeFile('groupMembers.txt', JSON.stringify(groupMembers), 'utf8', ()=>{
                     console.log("wirte groupMembers finish!");
                 });
@@ -447,7 +447,7 @@ function getAllGroupMembers(){
                 fs.writeFile('encryChatRoomId.txt', JSON.stringify(encryChatRoomId), 'utf8', ()=>{
                     console.log("wirte encryChatRoomId finish!");
                 });
-                
+                */
                 resolve();
             });
         });
@@ -460,7 +460,10 @@ function getAllGroupMembers(){
 function testSync(){
     var resMessage = "";
     var timestamp = new Date().getTime();
-    var timestamp = timestamp.toString().substr(0,10);
+    var timestamp = timestamp.toString().substr(0,13);
+
+    var timestamp2 = new Date().getTime();
+    var timestamp2 = timestamp2.toString().substr(0,13);
     var params = {
         'r': timestamp,
         'sid': wxsid,
@@ -479,15 +482,14 @@ function testSync(){
         method: 'GET',
         timeout: 60000,
         headers: {
-            'Content-Type': 'application/json',
+            //'Content-Type': 'application/json',
             'Cookie': "wxsid=" + wxsid + "; " + "wxuin=" + wxuin
         }
     };
 
-    console.log(options);
-
     host.forEach((element)=>{
         options.hostname = element + ".weixin.qq.com";
+        console.log(options);
         var req = https.request(options, (res) => {
             res.setEncoding('utf8');
             res.on('data', (chunk) => {
@@ -499,6 +501,8 @@ function testSync(){
                 console.log("=================");
             });
         });
+
+        req.end();
     });
 }
 
