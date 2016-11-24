@@ -481,7 +481,7 @@ function testSync(){
         'skey': skey,
         'deviceid': device_id,
         'synckey': syncKey,
-        '_': timestamp,
+        '_': timestamp2,
     };
 
     var paramsString = querystring.stringify(params);
@@ -497,6 +497,39 @@ function testSync(){
         }
     };
 
+    var hostIndex = 0;
+    function testSyncRequest(){
+        options.hostname = host[hostIndex] + ".weixin.qq.com";
+        console.log(options);
+        var req = https.request(options, (res) => {
+            res.setEncoding('utf8');
+            res.on('data', (chunk) => {
+                resMessage = chunk;
+            });
+            res.on('end', () => {
+                var pattern = /^window.synccheck={retcode:"(\d+)"/;
+                pattern.test(resMessage);
+                var retcode = RegExp.$1;
+                console.log(resMessage);
+                console.log(retcode);
+                if(retcode == 0){
+                    console.log("sync test success");
+                }else{
+                    if(hostIndex < host.length - 1){
+                        hostIndex ++;
+                        console.log(hostIndex);
+                        console.log("sync test fail");
+                        testSyncRequest();
+                    }
+                }
+            });
+        });
+        req.end();
+    }
+
+    testSyncRequest();
+
+/*
     host.forEach((element)=>{
         options.hostname = element + ".weixin.qq.com";
         console.log(options);
@@ -514,6 +547,7 @@ function testSync(){
 
         req.end();
     });
+*/
 }
 
 
