@@ -98,8 +98,6 @@ function getUuid() {
             };
 
             var req = https.request(options, (res) => {
-                //console.log(`STATUS: ${res.statusCode}`);
-                //console.log('headers: ', res.headers);
                 res.setEncoding('utf8');
                 res.on('data', (chunk) => {
                   var pattern = /window.QRLogin.code = (\d+); window.QRLogin.uuid = "(\S+?)"/;
@@ -492,7 +490,6 @@ function testSync(){
         method: 'GET',
         timeout: 60000,
         headers: {
-            //'Content-Type': 'application/json',
             'Cookie': cookies,
         }
     };
@@ -528,26 +525,6 @@ function testSync(){
     }
 
     testSyncRequest();
-
-/*
-    host.forEach((element)=>{
-        options.hostname = element + ".weixin.qq.com";
-        console.log(options);
-        var req = https.request(options, (res) => {
-            res.setEncoding('utf8');
-            res.on('data', (chunk) => {
-                resMessage += chunk;
-            });
-            res.on('end', () => {
-                console.log("=================");
-                console.log(resMessage);
-                console.log("=================");
-            });
-        });
-
-        req.end();
-    });
-*/
 }
 
 
