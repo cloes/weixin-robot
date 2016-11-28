@@ -466,70 +466,77 @@ function getAllGroupMembers(){
 }
 
 function testSync(){
-    var resMessage = "";
-    var timestamp = new Date().getTime();
-    var timestamp = timestamp.toString().substr(0,13);
+    return new Promise(function(resolve, reject){
+        var resMessage = "";
+        var timestamp = new Date().getTime();
+        var timestamp = timestamp.toString().substr(0,13);
 
-    var timestamp2 = new Date().getTime();
-    var timestamp2 = timestamp2.toString().substr(0,13);
-    var params = {
-        'r': timestamp,
-        'sid': wxsid,
-        'uin': wxuin,
-        'skey': skey,
-        'deviceid': device_id,
-        'synckey': syncKey,
-        '_': timestamp2,
-    };
+        var timestamp2 = new Date().getTime();
+        var timestamp2 = timestamp2.toString().substr(0,13);
+        var params = {
+            'r': timestamp,
+            'sid': wxsid,
+            'uin': wxuin,
+            'skey': skey,
+            'deviceid': device_id,
+            'synckey': syncKey,
+            '_': timestamp2,
+        };
 
-    var paramsString = querystring.stringify(params);
-    var options = {
-        //rejectUnauthorized:true,
-        agent:false,
-        path: "/cgi-bin/mmwebwx-bin/synccheck?" + paramsString,
-        method: 'GET',
-        timeout: 60000,
-        headers: {
-            'Cookie': cookies,
-        }
-    };
+        var paramsString = querystring.stringify(params);
+        var options = {
+            //rejectUnauthorized:true,
+            agent:false,
+            path: "/cgi-bin/mmwebwx-bin/synccheck?" + paramsString,
+            method: 'GET',
+            timeout: 60000,
+            headers: {
+                'Cookie': cookies,
+            }
+        };
 
-    var hostIndex = 0;
-    function testSyncRequest(){
-        options.hostname = host[hostIndex] + ".weixin.qq.com";
-        console.log(options);
-        var req = https.request(options, (res) => {
-            res.setEncoding('utf8');
-            res.on('data', (chunk) => {
-                resMessage = chunk;
-            });
-            res.on('end', () => {
-                var pattern = /^window.synccheck={retcode:"(\d+)"/;
-                pattern.test(resMessage);
-                var retcode = RegExp.$1;
-                console.log(resMessage);
-                console.log(retcode);
-                if(retcode == 0){
-                    console.log("sync test success");
-                }else{
-                    if(hostIndex < host.length - 1){
+        var hostIndex = 0;
+        function testSyncRequest(){
+            options.hostname = host[hostIndex] + ".weixin.qq.com";
+            console.log(options);
+            var req = https.request(options, (res) => {
+                res.setEncoding('utf8');
+                res.on('data', (chunk) => {
+                    resMessage = chunk;
+                });
+                res.on('end', () => {
+                    var pattern = /^window.synccheck={retcode:"(\d+)"/;
+                    pattern.test(resMessage);
+                    var retcode = RegExp.$1;
+                    console.log(resMessage);
+                    console.log(retcode);
+                    if(retcode == 0){
+                        console.log("sync test success");
+                        resolve();
+                    }else if(hostIndex < host.length - 1){
                         hostIndex ++;
                         console.log(hostIndex);
                         console.log("sync test fail");
                         testSyncRequest();
+                    }else{
+                        reject();
                     }
-                }
+                });
             });
-        });
-        req.end();
-    }
-
-    testSyncRequest();
+            req.end();
+        }
+        testSyncRequest();
+    });
 }
 
 
 function processMessage(){
-
+    var testSyncPromise = testSync();
+    testSyncPromise.then(()=>{
+        console.log("testSync OK");
+    },()=>{
+        console.log("testSync not OK");
+    })
 }
 
 app.on('ready',()=>{
@@ -541,7 +548,7 @@ app.on('ready',()=>{
   .then(statusNotify)
   .then(getContact)
   .then(getAllGroupMembers)
-  .then(testSync);
+  .then(processMessage);
 
 })
 
