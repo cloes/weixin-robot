@@ -505,17 +505,16 @@ function testSync(){
                     resMessage = chunk;
                 });
                 res.on('end', () => {
-                    var pattern = /^window.synccheck={retcode:"(\d+)"/;
+                    var pattern = /^window.synccheck={retcode:"(\d+)",selector:"(\d+)"/;
                     pattern.test(resMessage);
                     var retcode = RegExp.$1;
+                    var selector = RegExp.$2;
                     console.log(resMessage);
-                    console.log(retcode);
-                    if(retcode == 0){
+                    if(retcode === "0"){
                         console.log("sync test success");
-                        resolve();
+                        resolve(selector);
                     }else if(hostIndex < host.length - 1){
                         hostIndex ++;
-                        console.log(hostIndex);
                         console.log("sync test fail");
                         testSyncRequest();
                     }else{
@@ -531,12 +530,17 @@ function testSync(){
 
 
 function processMessage(){
-    var testSyncPromise = testSync();
-    testSyncPromise.then(()=>{
-        console.log("testSync OK");
-    },()=>{
-        console.log("testSync not OK");
-    })
+    function getMessage(){
+        var testSyncPromise = testSync();
+        testSyncPromise.then((selector)=>{
+            console.log("testSync OK");
+            console.log(`selector is ${selector}`);
+        },()=>{
+            console.log("testSync not OK");
+        })
+    }
+    setInterval(getMessage,1000);
+
 }
 
 app.on('ready',()=>{
