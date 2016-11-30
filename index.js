@@ -52,6 +52,10 @@ var host = ["webpush", "webpush2"];
 
 var cookies = "";
 
+var SyncKeyObj;
+
+var newSyncKey = "";
+
 function createWindow() {
     mainWindow = new BrowserWindow({width:800,height:600});
 
@@ -273,6 +277,7 @@ function getSyncKey(){
                 
                 res_obj = JSON.parse(res_message);
                 myAccount = res_obj.User;
+                SyncKeyObj = res_obj.SyncKey;
 
                 for(var i = 0; i < res_obj.SyncKey.Count; i++){
                     syncKey += res_obj.SyncKey.List[i].Key + "_" + res_obj.SyncKey.List[i].Val + "|";
@@ -498,7 +503,7 @@ function testSync(){
         var hostIndex = 0;
         function testSyncRequest(){
             options.hostname = host[hostIndex] + ".weixin.qq.com";
-            console.log(options);
+            //console.log(options);
             var req = https.request(options, (res) => {
                 res.setEncoding('utf8');
                 res.on('data', (chunk) => {
@@ -529,17 +534,81 @@ function testSync(){
 }
 
 
+
+function sync(selector){
+    switch(selector){
+        case "2"://新的消息
+            var timestamp = new Date().getTime();
+            timestamp = timestamp.toString().substr(0,10);
+            var postData = {
+                "BaseRequest": baseParams,
+                "SyncKey": SyncKeyObj,
+                "rr": ~parseInt(timestamp),
+            };
+            postData = JSON.stringify(postData);
+
+            fs.writeFile('syncPostData.txt', postData, 'utf8', ()=>{
+                console.log("wirte syncPostData.txt finish!");
+            });
+
+            var options = {
+                //rejectUnauthorized:true,
+                agent:false,
+                hostname: redirectUriObject.hostname,
+                path: "/cgi-bin/mmwebwx-bin/webwxsync?sid=" + wxsid + "&skey=" + skey +"&lang=en_US&pass_ticket=" + pass_ticket,
+                method: 'POST',
+                timeout: 60000,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': postData.length,
+                    'Cookie': cookies,
+                }
+            }
+
+            var req = https.request(options, (res) => {
+                var resMessage = "";
+                res.setEncoding('utf8');
+                res.on('data', (chunk) => {
+                    resMessage += chunk;
+                });
+                res.on('end', () => {
+                    fs.writeFile('syncResponseData.txt', resMessage, 'utf8', ()=>{
+                        console.log("wirte syncResponseData finish!");
+                    });
+                    var responseObj = JSON.parse(resMessage);
+                    for(var i = 0; i < responseObj.SyncKey.Count; i++){
+                        newSyncKey += responseObj.SyncKey.List[i].Key + "_" + responseObj.SyncKey.List[i].Val + "|";
+                    }
+                    newSyncKey = newSyncKey.substr(0, newSyncKey.length - 1);
+                });
+            });
+            req.write(postData);
+            req.end();
+            break;
+        case "4":
+            //通讯录更新
+            break;
+        case "7":
+            //手机上操作过
+            break;
+        default:
+            break;
+    }
+}
+
 function processMessage(){
     function getMessage(){
         var testSyncPromise = testSync();
         testSyncPromise.then((selector)=>{
             console.log("testSync OK");
             console.log(`selector is ${selector}`);
+            sync(selector);
         },()=>{
             console.log("testSync not OK");
         })
     }
-    setInterval(getMessage,1000);
+    getMessage();
+    //setInterval(getMessage,2000);
 
 }
 
