@@ -422,6 +422,10 @@ function getAllGroupMembers(){
         };
         postData = JSON.stringify(postData);
 
+        fs.writeFile('getAllGroupMembers_postdata.txt', postData, 'utf8', ()=>{
+            console.log("wirte getAllGroupMembers_postdata finish!");
+        });
+
         var options = {
             //rejectUnauthorized:true,
             agent:false,
@@ -452,11 +456,11 @@ function getAllGroupMembers(){
                     groupMembers[element.UserName] = element.MemberList;
                     encryChatRoomId[element.UserName] = element.EncryChatRoomId;
                 });
-                /*
+                
                 fs.writeFile('groupMembers.txt', JSON.stringify(groupMembers), 'utf8', ()=>{
                     console.log("wirte groupMembers finish!");
                 });
-
+                /*
                 fs.writeFile('encryChatRoomId.txt', JSON.stringify(encryChatRoomId), 'utf8', ()=>{
                     console.log("wirte encryChatRoomId finish!");
                 });
@@ -533,67 +537,88 @@ function testSync(){
     });
 }
 
-
-
 function sync(selector){
-    switch(selector){
-        case "2"://新的消息
-            var timestamp = new Date().getTime();
-            timestamp = timestamp.toString().substr(0,10);
-            var postData = {
-                "BaseRequest": baseParams,
-                "SyncKey": SyncKeyObj,
-                "rr": ~parseInt(timestamp),
-            };
-            postData = JSON.stringify(postData);
+    return new Promise(function(resolve, reject){
+        switch(selector){
+            case "2"://新的消息
+                var timestamp = new Date().getTime();
+                timestamp = timestamp.toString().substr(0,10);
+                var postData = {
+                    "BaseRequest": baseParams,
+                    "SyncKey": SyncKeyObj,
+                    "rr": ~parseInt(timestamp),
+                };
+                postData = JSON.stringify(postData);
 
-            fs.writeFile('syncPostData.txt', postData, 'utf8', ()=>{
-                console.log("wirte syncPostData.txt finish!");
-            });
-
-            var options = {
-                //rejectUnauthorized:true,
-                agent:false,
-                hostname: redirectUriObject.hostname,
-                path: "/cgi-bin/mmwebwx-bin/webwxsync?sid=" + wxsid + "&skey=" + skey +"&lang=en_US&pass_ticket=" + pass_ticket,
-                method: 'POST',
-                timeout: 60000,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Content-Length': postData.length,
-                    'Cookie': cookies,
-                }
-            }
-
-            var req = https.request(options, (res) => {
-                var resMessage = "";
-                res.setEncoding('utf8');
-                res.on('data', (chunk) => {
-                    resMessage += chunk;
+                fs.writeFile('syncPostData.txt', postData, 'utf8', ()=>{
+                    console.log("wirte syncPostData.txt finish!");
                 });
-                res.on('end', () => {
-                    fs.writeFile('syncResponseData.txt', resMessage, 'utf8', ()=>{
-                        console.log("wirte syncResponseData finish!");
-                    });
-                    var responseObj = JSON.parse(resMessage);
-                    for(var i = 0; i < responseObj.SyncKey.Count; i++){
-                        newSyncKey += responseObj.SyncKey.List[i].Key + "_" + responseObj.SyncKey.List[i].Val + "|";
+
+                var options = {
+                    //rejectUnauthorized:true,
+                    agent:false,
+                    hostname: redirectUriObject.hostname,
+                    path: "/cgi-bin/mmwebwx-bin/webwxsync?sid=" + wxsid + "&skey=" + skey +"&lang=en_US&pass_ticket=" + pass_ticket,
+                    method: 'POST',
+                    timeout: 60000,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Content-Length': postData.length,
+                        'Cookie': cookies,
                     }
-                    newSyncKey = newSyncKey.substr(0, newSyncKey.length - 1);
+                }
+
+                var req = https.request(options, (res) => {
+                    var resMessage = "";
+                    res.setEncoding('utf8');
+                    res.on('data', (chunk) => {
+                        resMessage += chunk;
+                    });
+                    res.on('end', () => {
+                        fs.writeFile('syncResponseData.txt', resMessage, 'utf8', ()=>{
+                            console.log("wirte syncResponseData finish!");
+                        });
+                        var responseObj = JSON.parse(resMessage);
+                        if(responseObj.BaseResponse.Ret == 0){
+                            for(var i = 0; i < responseObj.SyncKey.Count; i++){
+                                newSyncKey += responseObj.SyncKey.List[i].Key + "_" + responseObj.SyncKey.List[i].Val + "|";
+                            }
+                            newSyncKey = newSyncKey.substr(0, newSyncKey.length - 1);
+                            resolve(responseObj);
+                        }else{
+                            //reject();
+                        }
+                    });
                 });
-            });
-            req.write(postData);
-            req.end();
-            break;
-        case "4":
-            //通讯录更新
-            break;
-        case "7":
-            //手机上操作过
-            break;
-        default:
-            break;
-    }
+                req.write(postData);
+                req.end();
+                break;
+            case "4":
+                //通讯录更新
+                break;
+            case "7":
+                //手机上操作过
+                break;
+            default:
+                break;
+        }
+    }); 
+}
+
+function handleMessage(messageObj){
+    console.log(`messageObj is ${messageObj}`);
+    messageObj.AddMsgList.forEach((message)=>{
+        var user = {'id': message.FromUserName, 'name': 'unknown'};
+        if(message.MsgType.substr(0,2) === "@@"){//群消息
+            var messageType = 3;
+            console.log("this is group message");
+
+        }
+
+
+
+    });
+
 }
 
 function processMessage(){
@@ -605,6 +630,9 @@ function processMessage(){
             sync(selector);
         },()=>{
             console.log("testSync not OK");
+        })
+        .then((responseObj)=>{
+            handleMessage("responseObj");
         })
     }
     getMessage();
