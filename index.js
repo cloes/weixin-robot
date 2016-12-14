@@ -56,6 +56,9 @@ var SyncKeyObj;
 
 var newSyncKey = "";
 
+var groups;
+
+
 function createWindow() {
     mainWindow = new BrowserWindow({width:800,height:600});
 
@@ -446,14 +449,15 @@ function getAllGroupMembers(){
             });
             res.on('end', () => {
                 console.log('No more data in response from getAllGroupMembers.');
-                /*
+                
                 fs.writeFile('AllGroupMembers.txt', res_message, 'utf8', ()=>{
                     console.log("wirte AllGroupMembers finish!");
                 });
-                */
+                
                 resObj = JSON.parse(res_message);
                 resObj.ContactList.forEach((element)=>{
-                    groupMembers[element.UserName] = element.MemberList;
+                    //groupMembers[element.UserName] = element.MemberList;
+                    groupMembers[element.UserName] = element;
                     encryChatRoomId[element.UserName] = element.EncryChatRoomId;
                 });
                 

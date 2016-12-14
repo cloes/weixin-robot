@@ -1,6 +1,7 @@
 let ipc = require('electron').ipcRenderer;
 let showButton = document.getElementsByName('show-qr-image');
 let QRImage = document.getElementById('qr_code');
+var groupMembers = {};
 
 function sendQRRequest() {
 /*
@@ -10,4 +11,11 @@ function sendQRRequest() {
     });
 */
     
+}
+
+function getGroupMembers(){
+    ipc.once('sendGroupMembers',()=>{
+        
+    });
+
 }
