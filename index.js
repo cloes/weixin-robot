@@ -44,7 +44,7 @@ var statusNotifyResult;
 
 var groupList = new Array();
 
-var groupMembers = {};
+var groupMembers = {}
 
 var encryChatRoomId = {};
 
@@ -448,7 +448,7 @@ function getAllGroupMembers(){
                 res_message += chunk;
             });
             res.on('end', () => {
-                console.log('No more data in response from getAllGroupMembers.');
+                //console.log('No more data in response from getAllGroupMembers.');
                 
                 fs.writeFile('AllGroupMembers.txt', res_message, 'utf8', ()=>{
                     console.log("wirte AllGroupMembers finish!");
@@ -460,10 +460,18 @@ function getAllGroupMembers(){
                     groupMembers[element.UserName] = element;
                     encryChatRoomId[element.UserName] = element.EncryChatRoomId;
                 });
+
+                console.log(groupMembers);
                 
+                
+
                 fs.writeFile('groupMembers.txt', JSON.stringify(groupMembers), 'utf8', ()=>{
                     console.log("wirte groupMembers finish!");
                 });
+
+                mainWindow.webContents.send('sendGroupMembers', JSON.stringify(groupMembers));
+                console.log("ipc sending finish")
+
                 /*
                 fs.writeFile('encryChatRoomId.txt', JSON.stringify(encryChatRoomId), 'utf8', ()=>{
                     console.log("wirte encryChatRoomId finish!");
@@ -611,6 +619,8 @@ function sync(selector){
 
 function handleMessage(messageObj){
     console.log(`messageObj is ${messageObj}`);
+    //mainWindow.webContents.send('sendGroupMembers', 'whoooooooh!')
+    
     messageObj.AddMsgList.forEach((message)=>{
         var user = {'id': message.FromUserName, 'name': 'unknown'};
         if(message.MsgType.substr(0,2) === "@@"){//群消息
