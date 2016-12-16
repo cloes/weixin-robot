@@ -273,7 +273,7 @@ function getSyncKey(){
                 res_message += chunk;
             });
             res.on('end', () => {
-                console.log('No more data in response.');
+                //console.log('No more data in response.');
                 fs.writeFile('message.txt', res_message, 'utf8', ()=>{
                     console.log("wirte message finish!");
                 });
@@ -333,7 +333,7 @@ function statusNotify(){
                 res_message += chunk;
             });
             res.on('end', () => {
-                console.log('No more data in statusNotify.');
+                //console.log('No more data in statusNotify.');
                 resObj = JSON.parse(res_message);
                 statusNotifyResult = resObj.BaseResponse.Ret;
                 if(statusNotifyResult == 0){
@@ -379,7 +379,7 @@ function getContact(){
                 res_message += chunk;
             });
             res.on('end', () => {
-                console.log('No more data in response from getContact.');
+                //console.log('No more data in response from getContact.');
                 fs.writeFile('contact.txt', res_message, 'utf8', ()=>{
                     console.log("wirte contact finish!");
                 });
@@ -460,10 +460,6 @@ function getAllGroupMembers(){
                     groupMembers[element.UserName] = element;
                     encryChatRoomId[element.UserName] = element.EncryChatRoomId;
                 });
-
-                console.log(groupMembers);
-                
-                
 
                 fs.writeFile('groupMembers.txt', JSON.stringify(groupMembers), 'utf8', ()=>{
                     console.log("wirte groupMembers finish!");

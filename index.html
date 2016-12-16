@@ -10,14 +10,10 @@
     <h1>index.html file</h1>
     <button type="button" onclick="sendQRRequest()">show-qr-image</button>
     <img id="qr_code" src="login.png" alt="qr_code" />
-    <select>
-      <option value ="volvo">Volvo</option>
-      <option value ="saab">Saab</option>
-      <option value="opel">Opel</option>
-      <option value="audi">Audi</option>
+    <select id="sourceGroup" onchange="selectSourceMember(this)">
     </select>
-
-    <p id="test_text"></p>
+    <select id="sourceMember">
+    </select>
   </body>
   <script src="render.js"></script>
 </html>
