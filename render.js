@@ -17,6 +17,7 @@ function sendQRRequest() {
 function selectSourceMember(obj){
     var sourceMember = document.getElementById('sourceMember');
     var memberList = groupMembersObject[obj.value]['MemberList'];
+    console.log(memberList);
     var i = 0;
     for(p in memberList){
         if(memberList[p]['DisplayName']){
@@ -26,23 +27,22 @@ function selectSourceMember(obj){
         }
         i++;
     }
-
-    $(document).ready(function() {
-        $('#sourceMember').multiselect();
-    });
 }
 
 function getGroupMembers(){
     ipc.on('sendGroupMembers',(event, groupMembers)=>{
         groupMembersObject = JSON.parse(groupMembers);
         var sourceGroup = document.getElementById('sourceGroup');
-        var i = 0;
+        var i = 1;
         for(p in groupMembersObject){
             sourceGroup.options[i] = new Option(groupMembersObject[p]['NickName'], p);
             i++;
         }
-        //testText.innerHTML = groupMembers;
     });
+
+    // $(document).ready(function() {
+    //     $('#sourceMember').multiselect();
+    // });
 }
 
 getGroupMembers();
