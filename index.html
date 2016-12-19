@@ -15,12 +15,6 @@
     <link rel="stylesheet" href="css/bootstrap-multiselect.css" type="text/css">
     <script type="text/javascript" src="js/bootstrap-multiselect.js"></script>
 
-    <script type="text/javascript">
-        $(document).ready(function() {
-            $('#example-getting-started').multiselect();
-        });
-    </script>
-
     <title>this is index</title>
 
     <script>//require("./render.js")</script>
@@ -31,17 +25,10 @@
     <img id="qr_code" src="login.png" alt="qr_code" />
     <select id="sourceGroup" onchange="selectSourceMember(this)">
     </select>
-    <select id="sourceMember">
+
+    <select id="sourceMember" multiple="multiple">
     </select>
 
-    <select id="example-getting-started" multiple="multiple">
-        <option value="cheese">Cheese</option>
-        <option value="tomatoes">Tomatoes</option>
-        <option value="mozarella">Mozzarella</option>
-        <option value="mushrooms">Mushrooms</option>
-        <option value="pepperoni">Pepperoni</option>
-        <option value="onions">Onions</option>
-    </select>
   </body>
   <script src="render.js"></script>
 

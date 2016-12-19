@@ -26,6 +26,10 @@ function selectSourceMember(obj){
         }
         i++;
     }
+
+    $(document).ready(function() {
+        $('#sourceMember').multiselect();
+    });
 }
 
 function getGroupMembers(){
