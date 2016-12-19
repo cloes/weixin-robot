@@ -17,7 +17,6 @@ function sendQRRequest() {
 function selectSourceMember(obj){
     var sourceMember = document.getElementById('sourceMember');
     var memberList = groupMembersObject[obj.value]['MemberList'];
-    console.log(memberList);
     var i = 0;
     for(p in memberList){
         if(memberList[p]['DisplayName']){
@@ -27,6 +26,7 @@ function selectSourceMember(obj){
         }
         i++;
     }
+    $('#sourceMember').multiselect('rebuild');
 }
 
 function getGroupMembers(){
@@ -39,10 +39,6 @@ function getGroupMembers(){
             i++;
         }
     });
-
-    // $(document).ready(function() {
-    //     $('#sourceMember').multiselect();
-    // });
 }
 
 getGroupMembers();
