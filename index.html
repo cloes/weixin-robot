@@ -12,7 +12,16 @@
     <script>if (window.module) module = window.module;</script>
     <script type="text/javascript" src="js/bootstrap-3.3.7.min.js"></script>
 
+    <!-- Include the plugin's CSS and JS: -->
+    <script type="text/javascript" src="js/bootstrap-multiselect.js"></script>
+    <link rel="stylesheet" href="css/bootstrap-multiselect.css" type="text/css"/>
+
     <title>this is index</title>
+    <script>
+        $(document).ready(function() {
+            $('#sourceMember').multiselect();
+        });
+    </script>
 
     <script>//require("./render.js")</script>
   </head>
