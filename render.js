@@ -3,6 +3,7 @@ let showButton = document.getElementsByName('show-qr-image');
 let QRImage = document.getElementById('qr_code');
 let testText = document.getElementById('test_text');
 var groupMembersObject;
+var selectedOptions;
 
 function sendQRRequest() {
 /*
@@ -12,6 +13,11 @@ function sendQRRequest() {
     });
 */
     
+}
+
+function getAllSelectedOptions(){
+    selectedOptions = $('#sourceMember option:selected').map(function(a, item){return item.value;});
+    console.log(selectedOptions);
 }
 
 function selectSourceMember(obj){
@@ -33,11 +39,14 @@ function getGroupMembers(){
     ipc.on('sendGroupMembers',(event, groupMembers)=>{
         groupMembersObject = JSON.parse(groupMembers);
         var sourceGroup = document.getElementById('sourceGroup');
+        var targetGroup = document.getElementById('targetGroup');
         var i = 1;
         for(p in groupMembersObject){
             sourceGroup.options[i] = new Option(groupMembersObject[p]['NickName'], p);
+            targetGroup.options[i-1] = new Option(groupMembersObject[p]['NickName'], p);
             i++;
         }
+        $('#targetGroup').multiselect('rebuild');
     });
 }
 

@@ -3,16 +3,13 @@
   <head>
     <meta charset="utf-8">
     <link rel="stylesheet" href="css/index.css" type="text/css">
-
-    <!-- Include Twitter Bootstrap and jQuery: -->
     <link rel="stylesheet" href="css/bootstrap-3.3.7.min.css" type="text/css">
-    
+
     <script>if (typeof module === 'object') {window.module = module; module = undefined;}</script>
     <script type="text/javascript" src="js/jquery-2.2.4.min.js"></script>
     <script>if (window.module) module = window.module;</script>
-    <script type="text/javascript" src="js/bootstrap-3.3.7.min.js"></script>
 
-    <!-- Include the plugin's CSS and JS: -->
+    <script type="text/javascript" src="js/bootstrap-3.3.7.min.js"></script>
     <script type="text/javascript" src="js/bootstrap-multiselect.js"></script>
     <link rel="stylesheet" href="css/bootstrap-multiselect.css" type="text/css"/>
 
@@ -20,6 +17,7 @@
     <script>
         $(document).ready(function() {
             $('#sourceMember').multiselect();
+            $('#targetGroup').multiselect();
         });
     </script>
 
@@ -30,14 +28,24 @@
     <img id="qr_code" src="login.png" alt="qr_code" />
 
     <div class="source-div">
+      <h3>消息源</h3>
       <select id="sourceGroup" class="form-control" onchange="selectSourceMember(this)">
         <option value ="select">select</option>
       </select>
 
-      <select id="sourceMember" class="form-control" multiple="multiple">
+      <select id="sourceMember" multiple="multiple">
+       <option value ="select">select</option>
+      </select>
+      </br>
+      <button onclick="getAllSelectedOptions()">OK</button>
+    </div>
+    
+    <div class="target-div">
+      <select id="targetGroup" multiple="multiple">
        <option value ="select">select</option>
       </select>
     </div>
+
   </body>
   <script src="render.js"></script>
 </html>
