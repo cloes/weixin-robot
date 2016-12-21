@@ -3,7 +3,10 @@ let showButton = document.getElementsByName('show-qr-image');
 let QRImage = document.getElementById('qr_code');
 let testText = document.getElementById('test_text');
 var groupMembersObject;
-var selectedOptions;
+var sourceGroupSelected;
+var sourceMemberSelected;
+var targetGroupSelected;
+
 
 function sendQRRequest() {
 /*
@@ -15,9 +18,28 @@ function sendQRRequest() {
     
 }
 
-function getAllSelectedOptions(){
-    selectedOptions = $('#sourceMember option:selected').map(function(a, item){return item.value;});
-    console.log(selectedOptions);
+function getSourceGroup(){
+    sourceGroupSelected = $('#sourceGroup option:selected').val();
+}
+
+function getSourceMember(){
+    sourceMemberSelected = $('#sourceMember option:selected').map(function(a, item){return item.value;}).get();
+}
+
+function getTargetGroup(){
+    targetGroupSelected = $('#targetGroup option:selected').map(function(a, item){return item.value;}).get();
+}
+
+//点击确定后向后端发送转发的设置信息
+function sendSyncOption(){
+    getSourceGroup();
+    getSourceMember();
+    getTargetGroup();
+    var syncOption = {
+        'sourceGroupSelected':sourceGroupSelected,
+        'sourceMemberSelected':sourceMemberSelected,
+        'targetGroupSelected':targetGroupSelected,
+    };
 }
 
 function selectSourceMember(obj){
