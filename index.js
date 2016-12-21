@@ -58,6 +58,9 @@ var newSyncKey = "";
 
 var groups;
 
+var syncFlag = false;
+
+var syncOption;
 
 function createWindow() {
     mainWindow = new BrowserWindow({width:800,height:600});
@@ -545,7 +548,7 @@ function testSync(){
     });
 }
 
-function sync(selector){
+function getMessageType(selector){
     return new Promise(function(resolve, reject){
         switch(selector){
             case "2"://新的消息
@@ -614,35 +617,44 @@ function sync(selector){
 }
 
 function handleMessage(messageObj){
-    console.log(`messageObj is ${messageObj}`);
-    //mainWindow.webContents.send('sendGroupMembers', 'whoooooooh!')
+    //console.log(`messageObj is ${messageObj}`);
     
     messageObj.AddMsgList.forEach((message)=>{
-        var user = {'id': message.FromUserName, 'name': 'unknown'};
-        if(message.MsgType.substr(0,2) === "@@"){//群消息
-            var messageType = 3;
-            console.log("this is group message");
-
+        if(syncFlag){
+            var user = {'id': message.FromUserName, 'name': 'unknown'};
+            if(message.FromUserName.substr(0,2) === "@@" && message.MsgType === 1){//群消息
+                if(message.FromUserName.substr(2) === syncOption.sourceGroupSelected){//消息来源于指定的群
+                    if(message.Content.substr(1) === syncOption.sourceMemberSelected){
+                        //TODO:转发操作
+                    }
+                }
+            }
         }
-
-
-
     });
 
 }
 
+function getSyncOption(){
+    ipc.on('sendSyncOption', (event, arg) => {
+        console.log(arg);
+        syncOption = JSON.parse(arg);
+        syncFlag = true;
+    });
+}
+
+
 function processMessage(){
+    getSyncOption();
+
     function getMessage(){
         var testSyncPromise = testSync();
         testSyncPromise.then((selector)=>{
             console.log("testSync OK");
             console.log(`selector is ${selector}`);
-            sync(selector);
-        },()=>{
-            console.log("testSync not OK");
-        })
+            getMessageType(selector);
+        },()=>{console.log("testSync not OK");})
         .then((responseObj)=>{
-            handleMessage("responseObj");
+            handleMessage(responseObj);
         })
     }
     getMessage();
@@ -652,7 +664,6 @@ function processMessage(){
 
 app.on('ready',()=>{
   var promise = getUuid();
-
   promise.then(createQRimage).then(createWindow).then(doRequestPromise).then(loginPromise,(reject_code)=>{
       console.log(`reject_code is:${reject_code}`);
   }).then(getSyncKey)
@@ -660,7 +671,6 @@ app.on('ready',()=>{
   .then(getContact)
   .then(getAllGroupMembers)
   .then(processMessage);
-
 })
 
 app.on('window-all-closed',function(){

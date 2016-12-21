@@ -40,6 +40,7 @@ function sendSyncOption(){
         'sourceMemberSelected':sourceMemberSelected,
         'targetGroupSelected':targetGroupSelected,
     };
+    ipc.send('sendSyncOption', JSON.stringify(syncOption));
 }
 
 function selectSourceMember(obj){
