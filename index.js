@@ -529,13 +529,13 @@ function testSync(){
                     pattern.test(resMessage);
                     var retcode = RegExp.$1;
                     var selector = RegExp.$2;
-                    console.log(resMessage);
+                    //console.log(resMessage);
                     if(retcode === "0"){
-                        console.log("sync test success");
+                        //console.log("sync test success");
                         resolve(selector);
                     }else if(hostIndex < host.length - 1){
                         hostIndex ++;
-                        console.log("sync test fail");
+                        //console.log("sync test fail");
                         testSyncRequest();
                     }else{
                         reject();
@@ -562,7 +562,7 @@ function getMessageType(selector){
                 postData = JSON.stringify(postData);
 
                 fs.writeFile('syncPostData.txt', postData, 'utf8', ()=>{
-                    console.log("wirte syncPostData.txt finish!");
+                    //console.log("wirte syncPostData.txt finish!");
                 });
 
                 var options = {
@@ -587,7 +587,7 @@ function getMessageType(selector){
                     });
                     res.on('end', () => {
                         fs.writeFile('syncResponseData.txt', resMessage, 'utf8', ()=>{
-                            console.log("wirte syncResponseData finish!");
+                            //console.log("wirte syncResponseData finish!");
                         });
                         var responseObj = JSON.parse(resMessage);
                         if(responseObj.BaseResponse.Ret == 0){
@@ -616,19 +616,74 @@ function getMessageType(selector){
     }); 
 }
 
-function handleMessage(messageObj){
-    //console.log(`messageObj is ${messageObj}`);
+//根据用户ID发送消息
+function sendMessageById(content,destinationId) {
+    var timestamp = new Date().getTime();
+    var clientMsgId = timestamp.toString().substr(0,17) + Math.random().toString().substr(-4);
+    var postData = JSON.stringify({
+        "BaseRequest": baseParams,
+        "Msg": {
+            "Type": 1,
+            "Content":content,
+            "FromUserName":myAccount.UserName,
+            "ToUserName":destinationId,
+            "LocalID": clientMsgId,
+            "ClientMsgId": clientMsgId,
+        }
+    });
+
+    var options = {
+        //rejectUnauthorized:true,
+        agent:false,
+        hostname: redirectUriObject.hostname,
+        path: "/cgi-bin/mmwebwx-bin/webwxsendmsg?pass_ticket=" + pass_ticket,
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': postData.length,
+            'Cookie': cookies,
+        }
+    };
     
+    var req = https.request(options, (res) => {
+        res.setEncoding('utf8');
+        res.on('data', (chunk) => {
+            res_message += chunk;
+        });
+        res.on('end', () => {
+            console.log(`send message result ${res_message}`);
+
+            fs.writeFile('send_message_result.txt', res_message, 'utf8', ()=>{
+                console.log("wirte send_message_result.txt finish!");
+            });
+            //var res_obj = JSON.parse(res_message);
+        });
+    });
+    req.write(postData);
+    req.end();
+}
+
+function handleMessage(messageObj){
+    console.log("handleMessage");
+    console.log("messageObj AddMsgList is");
+    //console.log(`messageObj AddMsgList is ${messageObj.AddMsgList}`);
     messageObj.AddMsgList.forEach((message)=>{
+        console.log("in foreach");
         if(syncFlag){
-            var user = {'id': message.FromUserName, 'name': 'unknown'};
+            console.log("001");
+            //var user = {'id': message.FromUserName, 'name': 'unknown'};
             if(message.FromUserName.substr(0,2) === "@@" && message.MsgType === 1){//群消息
+                console.log("002");
                 if(message.FromUserName.substr(2) === syncOption.sourceGroupSelected){//消息来源于指定的群
+                    console.log("003");
                     if(message.Content.substr(1) === syncOption.sourceMemberSelected){
-                        //TODO:转发操作
+                        console.log("004");
+                        sendMessageById(message.Content, syncOption.targetGroupSelected);
                     }
                 }
             }
+        }else{
+            console.log("syncFlag is false");
         }
     });
 
@@ -649,16 +704,18 @@ function processMessage(){
     function getMessage(){
         var testSyncPromise = testSync();
         testSyncPromise.then((selector)=>{
-            console.log("testSync OK");
-            console.log(`selector is ${selector}`);
+            //console.log("testSync OK");
+            //console.log(`selector is ${selector}`);
             getMessageType(selector);
         },()=>{console.log("testSync not OK");})
         .then((responseObj)=>{
+            //responseObj导致系统异常终止
+            console.log(responseObj.AddMsgCount);
             handleMessage(responseObj);
         })
     }
-    getMessage();
-    //setInterval(getMessage,2000);
+    //getMessage();
+    setInterval(getMessage,1000);
 
 }
 
