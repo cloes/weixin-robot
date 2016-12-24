@@ -667,8 +667,16 @@ function handleMessage(messageObj){
     messageObj.AddMsgList.forEach((message)=>{
         if(syncFlag){
             if(message.FromUserName.substr(0,2) === "@@" && message.MsgType === 1){//群消息
-                if(message.FromUserName.substr(2) === syncOption.sourceGroupSelected){//消息来源于指定的群
+                //console.log(message.FromUserName);
+                //console.log(syncOption.sourceGroupSelected);
+                fs.appendFile('message_FromUserName_List.txt', message.FromUserName + "\r\n", 'utf8', ()=>{
+                    //console.log("appendFile message_FromUserName_List finish!");
+                });
+                if(message.FromUserName === syncOption.sourceGroupSelected){//消息来源于指定的群
                     console.log("003");
+                    fs.appendFile('003.txt', "003" + "\r\n", 'utf8', ()=>{
+                        //console.log("appendFile message_FromUserName_List finish!");
+                    });
                     if(message.Content.substr(1) === syncOption.sourceMemberSelected){
                         console.log("004");
                         sendMessageById(message.Content, syncOption.targetGroupSelected);
@@ -679,12 +687,13 @@ function handleMessage(messageObj){
             console.log("syncFlag is false");
         }
     });
-
 }
 
 function getSyncOption(){
     ipc.on('sendSyncOption', (event, arg) => {
-        console.log(arg);
+        fs.writeFile('SyncOption.txt', arg, 'utf8', ()=>{
+            console.log("wirte SyncOption.txt finish!");
+        });
         syncOption = JSON.parse(arg);
         syncFlag = true;
     });
