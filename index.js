@@ -664,16 +664,9 @@ function sendMessageById(content,destinationId) {
 }
 
 function handleMessage(messageObj){
-    console.log("handleMessage");
-    console.log("messageObj AddMsgList is");
-    //console.log(`messageObj AddMsgList is ${messageObj.AddMsgList}`);
     messageObj.AddMsgList.forEach((message)=>{
-        console.log("in foreach");
         if(syncFlag){
-            console.log("001");
-            //var user = {'id': message.FromUserName, 'name': 'unknown'};
             if(message.FromUserName.substr(0,2) === "@@" && message.MsgType === 1){//群消息
-                console.log("002");
                 if(message.FromUserName.substr(2) === syncOption.sourceGroupSelected){//消息来源于指定的群
                     console.log("003");
                     if(message.Content.substr(1) === syncOption.sourceMemberSelected){
@@ -706,12 +699,10 @@ function processMessage(){
         testSyncPromise.then((selector)=>{
             //console.log("testSync OK");
             //console.log(`selector is ${selector}`);
-            getMessageType(selector);
+            return getMessageType(selector);
         },()=>{console.log("testSync not OK");})
-        .then((responseObj)=>{
-            //responseObj导致系统异常终止
-            console.log(responseObj.AddMsgCount);
-            handleMessage(responseObj);
+        .then((responseObject)=>{
+            handleMessage(responseObject);
         })
     }
     //getMessage();
