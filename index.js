@@ -485,6 +485,8 @@ function getAllGroupMembers(){
     });
 }
 
+
+//检测是否有新的消息
 function testSync(){
     return new Promise(function(resolve, reject){
         var resMessage = "";
@@ -595,6 +597,8 @@ function getMessageType(selector){
                                 newSyncKey += responseObj.SyncKey.List[i].Key + "_" + responseObj.SyncKey.List[i].Val + "|";
                             }
                             newSyncKey = newSyncKey.substr(0, newSyncKey.length - 1);
+                            syncKey = newSyncKey;
+                            SyncKeyObj = responseObj.SyncKey;
                             resolve(responseObj);
                         }else{
                             //reject();
