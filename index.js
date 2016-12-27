@@ -489,6 +489,7 @@ function getAllGroupMembers(){
 
 
 //检测是否有新的消息
+//TODO:存在bug，每个连接都是长连接，请在上一个上连接返回后再发起下一个长连接
 function testSync(){
     return new Promise(function(resolve, reject){
         var resMessage = "";
@@ -508,6 +509,11 @@ function testSync(){
         };
 
         var paramsString = querystring.stringify(params);
+
+        //fs.appendFile('sync_new_old.txt', " paramsString: "+ paramsString + "\r\n", 'utf8', ()=>{
+            //console.log("wirte syncResponseData finish!");
+        //});
+
         var options = {
             //rejectUnauthorized:true,
             agent:false,
@@ -555,6 +561,7 @@ function testSync(){
 
 function getMessageType(selector){
     return new Promise(function(resolve, reject){
+        //要先判断selector是否是0
         var timestamp = new Date().getTime();
         timestamp = timestamp.toString().substr(0,10);
         var postData = {
@@ -594,12 +601,22 @@ function getMessageType(selector){
                 });
                 var responseObj = JSON.parse(resMessage);
                 if(responseObj.BaseResponse.Ret == 0){
+                    newSyncKey = "";
                     for(var i = 0; i < responseObj.SyncKey.Count; i++){
                         newSyncKey += responseObj.SyncKey.List[i].Key + "_" + responseObj.SyncKey.List[i].Val + "|";
                     }
                     newSyncKey = newSyncKey.substr(0, newSyncKey.length - 1);
+
+                    fs.appendFile('sync_new_old.txt', " old: "+syncKey+"\r\n", 'utf8', ()=>{
+                        //console.log("wirte syncResponseData finish!");
+                    });
                     syncKey = newSyncKey;
+                    fs.appendFile('sync_new_old.txt', " new: "+syncKey+"\r\n", 'utf8', ()=>{
+                        //console.log("wirte syncResponseData finish!");
+                    });
                     SyncKeyObj = responseObj.SyncKey;
+
+                    console.log("update synckey");
                     switch(selector){
                         case "2"://新的消息
                             resolve(responseObj);
