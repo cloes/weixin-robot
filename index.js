@@ -48,7 +48,9 @@ var groupMembers = {}
 
 var encryChatRoomId = {};
 
-var host = ["webpush", "webpush2"];
+//var host = ["webpush", "webpush2"];
+
+var host = ["webpush2"];
 
 var cookies = "";
 
@@ -527,6 +529,7 @@ function testSync(){
                     resMessage = chunk;
                 });
                 res.on('end', () => {
+                    console.log(resMessage);
                     var pattern = /^window.synccheck={retcode:"(\d+)",selector:"(\d+)"/;
                     pattern.test(resMessage);
                     var retcode = RegExp.$1;
@@ -552,71 +555,71 @@ function testSync(){
 
 function getMessageType(selector){
     return new Promise(function(resolve, reject){
-        switch(selector){
-            case "2"://新的消息
-                var timestamp = new Date().getTime();
-                timestamp = timestamp.toString().substr(0,10);
-                var postData = {
-                    "BaseRequest": baseParams,
-                    "SyncKey": SyncKeyObj,
-                    "rr": ~parseInt(timestamp),
-                };
-                postData = JSON.stringify(postData);
+        var timestamp = new Date().getTime();
+        timestamp = timestamp.toString().substr(0,10);
+        var postData = {
+            "BaseRequest": baseParams,
+            "SyncKey": SyncKeyObj,
+            "rr": ~parseInt(timestamp),
+        };
+        postData = JSON.stringify(postData);
 
-                fs.writeFile('syncPostData.txt', postData, 'utf8', ()=>{
-                    //console.log("wirte syncPostData.txt finish!");
-                });
+        fs.writeFile('syncPostData.txt', postData, 'utf8', ()=>{
+            //console.log("wirte syncPostData.txt finish!");
+        });
 
-                var options = {
-                    //rejectUnauthorized:true,
-                    agent:false,
-                    hostname: redirectUriObject.hostname,
-                    path: "/cgi-bin/mmwebwx-bin/webwxsync?sid=" + wxsid + "&skey=" + skey +"&lang=en_US&pass_ticket=" + pass_ticket,
-                    method: 'POST',
-                    timeout: 60000,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Content-Length': postData.length,
-                        'Cookie': cookies,
-                    }
-                }
-
-                var req = https.request(options, (res) => {
-                    var resMessage = "";
-                    res.setEncoding('utf8');
-                    res.on('data', (chunk) => {
-                        resMessage += chunk;
-                    });
-                    res.on('end', () => {
-                        fs.writeFile('syncResponseData.txt', resMessage, 'utf8', ()=>{
-                            //console.log("wirte syncResponseData finish!");
-                        });
-                        var responseObj = JSON.parse(resMessage);
-                        if(responseObj.BaseResponse.Ret == 0){
-                            for(var i = 0; i < responseObj.SyncKey.Count; i++){
-                                newSyncKey += responseObj.SyncKey.List[i].Key + "_" + responseObj.SyncKey.List[i].Val + "|";
-                            }
-                            newSyncKey = newSyncKey.substr(0, newSyncKey.length - 1);
-                            syncKey = newSyncKey;
-                            SyncKeyObj = responseObj.SyncKey;
-                            resolve(responseObj);
-                        }else{
-                            //reject();
-                        }
-                    });
-                });
-                req.write(postData);
-                req.end();
-                break;
-            case "4":
-                //通讯录更新
-                break;
-            case "7":
-                //手机上操作过
-                break;
-            default:
-                break;
+        var options = {
+            //rejectUnauthorized:true,
+            agent:false,
+            hostname: redirectUriObject.hostname,
+            path: "/cgi-bin/mmwebwx-bin/webwxsync?sid=" + wxsid + "&skey=" + skey +"&lang=en_US&pass_ticket=" + pass_ticket,
+            method: 'POST',
+            timeout: 60000,
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': postData.length,
+                'Cookie': cookies,
+            }
         }
+
+        var req = https.request(options, (res) => {
+            var resMessage = "";
+            res.setEncoding('utf8');
+            res.on('data', (chunk) => {
+                resMessage += chunk;
+            });
+            res.on('end', () => {
+                fs.writeFile('syncResponseData.txt', resMessage, 'utf8', ()=>{
+                    //console.log("wirte syncResponseData finish!");
+                });
+                var responseObj = JSON.parse(resMessage);
+                if(responseObj.BaseResponse.Ret == 0){
+                    for(var i = 0; i < responseObj.SyncKey.Count; i++){
+                        newSyncKey += responseObj.SyncKey.List[i].Key + "_" + responseObj.SyncKey.List[i].Val + "|";
+                    }
+                    newSyncKey = newSyncKey.substr(0, newSyncKey.length - 1);
+                    syncKey = newSyncKey;
+                    SyncKeyObj = responseObj.SyncKey;
+                    switch(selector){
+                        case "2"://新的消息
+                            resolve(responseObj);
+                            break;
+                        case "4":
+                            //通讯录更新
+                            break;
+                        case "7":
+                            //手机上操作过
+                            break;
+                        default:
+                            break;
+                    }
+                }else{
+                    //reject();
+                }
+            });
+        });
+        req.write(postData);
+        req.end();
     }); 
 }
 
@@ -671,20 +674,19 @@ function handleMessage(messageObj){
     messageObj.AddMsgList.forEach((message)=>{
         if(syncFlag){
             if(message.FromUserName.substr(0,2) === "@@" && message.MsgType === 1){//群消息
-                //console.log(message.FromUserName);
-                //console.log(syncOption.sourceGroupSelected);
                 fs.appendFile('message_FromUserName_List.txt', message.FromUserName + "\r\n", 'utf8', ()=>{
                     //console.log("appendFile message_FromUserName_List finish!");
                 });
                 if(message.FromUserName === syncOption.sourceGroupSelected){//消息来源于指定的群
-                    console.log("003");
-                    fs.appendFile('003.txt', "003" + "\r\n", 'utf8', ()=>{
-                        //console.log("appendFile message_FromUserName_List finish!");
+                    syncOption.sourceMemberSelected.forEach((sourceMemberSelected)=>{
+                        if(message.Content.substr(0,message.Content.indexOf(":")) === sourceMemberSelected){
+                            console.log("004");
+                            fs.appendFile('004.txt', "004" + "\r\n", 'utf8', ()=>{
+                                    //console.log("appendFile message_FromUserName_List finish!");
+                            });
+                            //sendMessageById(message.Content, syncOption.targetGroupSelected);
+                        }
                     });
-                    if(message.Content.substr(1) === syncOption.sourceMemberSelected){
-                        console.log("004");
-                        sendMessageById(message.Content, syncOption.targetGroupSelected);
-                    }
                 }
             }
         }else{
