@@ -510,10 +510,6 @@ function testSync(){
 
         var paramsString = querystring.stringify(params);
 
-        //fs.appendFile('sync_new_old.txt', " paramsString: "+ paramsString + "\r\n", 'utf8', ()=>{
-            //console.log("wirte syncResponseData finish!");
-        //});
-
         var options = {
             //rejectUnauthorized:true,
             agent:false,
@@ -651,34 +647,41 @@ function sendMessageById(content,destinationId) {
             "ToUserName":destinationId,
             "LocalID": clientMsgId,
             "ClientMsgId": clientMsgId,
-        }
+        },
+        "Scene":0
+    });
+
+    fs.appendFile('sendMessageById_postdata.txt', postData + "\r\n", 'utf8', ()=>{
+        console.log("wirte sendMessageById_postdata.txt finish!");
     });
 
     var options = {
         //rejectUnauthorized:true,
         agent:false,
         hostname: redirectUriObject.hostname,
-        path: "/cgi-bin/mmwebwx-bin/webwxsendmsg?pass_ticket=" + pass_ticket,
+        path: "/cgi-bin/mmwebwx-bin/webwxsendmsg",
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/json; charset=UTF-8',
             'Content-Length': postData.length,
             'Cookie': cookies,
         }
     };
+
+    fs.writeFile('sendMessageById_option.txt', JSON.stringify(options), 'utf8', ()=>{
+        console.log("wirte sendMessageById_option.txt finish!");
+    });
+
+    var resMessage = "";
     
     var req = https.request(options, (res) => {
         res.setEncoding('utf8');
         res.on('data', (chunk) => {
-            res_message += chunk;
+            resMessage += chunk;
         });
         res.on('end', () => {
-            console.log(`send message result ${res_message}`);
+            console.log(resMessage);
 
-            fs.writeFile('send_message_result.txt', res_message, 'utf8', ()=>{
-                console.log("wirte send_message_result.txt finish!");
-            });
-            //var res_obj = JSON.parse(res_message);
         });
     });
     req.write(postData);
@@ -689,13 +692,16 @@ function handleMessage(messageObj){
     messageObj.AddMsgList.forEach((message)=>{
         if(syncFlag){
             if(message.FromUserName.substr(0,2) === "@@" && message.MsgType === 1){//群消息
-                fs.appendFile('message_FromUserName_List.txt', message.FromUserName + "\r\n", 'utf8', ()=>{
-                    //console.log("appendFile message_FromUserName_List finish!");
-                });
                 if(message.FromUserName === syncOption.sourceGroupSelected){//消息来源于指定的群
                     syncOption.sourceMemberSelected.forEach((sourceMemberSelected)=>{
                         if(message.Content.substr(0,message.Content.indexOf(":")) === sourceMemberSelected){
-                            sendMessageById(message.Content, syncOption.targetGroupSelected);
+                            syncOption.targetGroupSelected.forEach((targetGroup)=>{
+                                fs.appendFile('message_Content.txt', message.Content + "\r\n", 'utf8', ()=>{
+                                    //console.log("appendFile message_FromUserName_List finish!");
+                                });
+                                var realContent = message.Content.substr(message.Content.indexOf(">")+1);
+                                sendMessageById(realContent, targetGroup);
+                            });
                         }
                     });
                 }
