@@ -542,8 +542,12 @@ function testSync(){
                     var selector = RegExp.$2;
                     //console.log(resMessage);
                     if(retcode === "0"){
-                        //console.log("sync test success");
-                        resolve(selector);
+                        if(selector === "0"){
+                            testSyncRequest();
+                        }else{
+                            //console.log("sync test success");
+                            resolve(selector);
+                        }
                     }else if(hostIndex < host.length - 1){
                         hostIndex ++;
                         //console.log("sync test fail");
@@ -561,7 +565,6 @@ function testSync(){
 
 function getMessageType(selector){
     return new Promise(function(resolve, reject){
-        //要先判断selector是否是0
         var timestamp = new Date().getTime();
         timestamp = timestamp.toString().substr(0,10);
         var postData = {
@@ -607,16 +610,11 @@ function getMessageType(selector){
                     }
                     newSyncKey = newSyncKey.substr(0, newSyncKey.length - 1);
 
-                    fs.appendFile('sync_new_old.txt', " old: "+syncKey+"\r\n", 'utf8', ()=>{
-                        //console.log("wirte syncResponseData finish!");
-                    });
                     syncKey = newSyncKey;
-                    fs.appendFile('sync_new_old.txt', " new: "+syncKey+"\r\n", 'utf8', ()=>{
-                        //console.log("wirte syncResponseData finish!");
-                    });
                     SyncKeyObj = responseObj.SyncKey;
-
                     console.log("update synckey");
+                    getMessage();
+                    
                     switch(selector){
                         case "2"://新的消息
                             resolve(responseObj);
@@ -697,11 +695,7 @@ function handleMessage(messageObj){
                 if(message.FromUserName === syncOption.sourceGroupSelected){//消息来源于指定的群
                     syncOption.sourceMemberSelected.forEach((sourceMemberSelected)=>{
                         if(message.Content.substr(0,message.Content.indexOf(":")) === sourceMemberSelected){
-                            console.log("004");
-                            fs.appendFile('004.txt', "004" + "\r\n", 'utf8', ()=>{
-                                    //console.log("appendFile message_FromUserName_List finish!");
-                            });
-                            //sendMessageById(message.Content, syncOption.targetGroupSelected);
+                            sendMessageById(message.Content, syncOption.targetGroupSelected);
                         }
                     });
                 }
@@ -723,22 +717,24 @@ function getSyncOption(){
 }
 
 
+function getMessage(){
+    var testSyncPromise = testSync();
+    testSyncPromise.then((selector)=>{
+        console.log("testSync OK");
+        //console.log(`selector is ${selector}`);
+        return getMessageType(selector);
+    },()=>{console.log("testSync not OK");})
+    .then((responseObject)=>{
+        handleMessage(responseObject);
+    })
+}
+
+
 function processMessage(){
     getSyncOption();
 
-    function getMessage(){
-        var testSyncPromise = testSync();
-        testSyncPromise.then((selector)=>{
-            //console.log("testSync OK");
-            //console.log(`selector is ${selector}`);
-            return getMessageType(selector);
-        },()=>{console.log("testSync not OK");})
-        .then((responseObject)=>{
-            handleMessage(responseObject);
-        })
-    }
-    //getMessage();
-    setInterval(getMessage,1000);
+    getMessage();
+    //setInterval(getMessage,1000);
 
 }
 
