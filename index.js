@@ -651,6 +651,8 @@ function sendMessageById(content,destinationId) {
         "Scene":0
     });
 
+    postData = new Buffer(postData,"utf8");
+
     fs.appendFile('sendMessageById_postdata.txt', postData + "\r\n", 'utf8', ()=>{
         console.log("wirte sendMessageById_postdata.txt finish!");
     });
@@ -659,10 +661,10 @@ function sendMessageById(content,destinationId) {
         //rejectUnauthorized:true,
         agent:false,
         hostname: redirectUriObject.hostname,
-        path: "/cgi-bin/mmwebwx-bin/webwxsendmsg",
+        path: "/cgi-bin/mmwebwx-bin/webwxsendmsg?lang=zh_CN&pass_ticket=" + pass_ticket,
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json; charset=UTF-8',
+            'Content-Type': 'application/json;charset=UTF-8',
             'Content-Length': postData.length,
             'Cookie': cookies,
         }
