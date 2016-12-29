@@ -691,16 +691,36 @@ function sendMessageById(content,destinationId) {
     req.end();
 }
 
+//根据用户的id发送图片
+function sendImageById(content,destinationId){
+
+}
+
+//通过xml格式的消息下载图片
+function getImage(content){
+    unescapeContent = unescape(content);
+    fs.writeFile('unescapeContent.txt', unescapeContent, 'utf8', ()=>{
+        //console.log("wirte unescapeContent.txt finish!");
+    });
+}
+
 function handleMessage(messageObj){
     messageObj.AddMsgList.forEach((message)=>{
         if(syncFlag){
-            if(message.FromUserName.substr(0,2) === "@@" && message.MsgType === 1){//群消息
+            if(message.FromUserName.substr(0,2) === "@@"){//群消息
                 if(message.FromUserName === syncOption.sourceGroupSelected){//消息来源于指定的群
                     syncOption.sourceMemberSelected.forEach((sourceMemberSelected)=>{
                         if(message.Content.substr(0,message.Content.indexOf(":")) === sourceMemberSelected){
                             syncOption.targetGroupSelected.forEach((targetGroup)=>{
                                 var realContent = message.Content.substr(message.Content.indexOf(">")+1);
-                                sendMessageById(realContent, targetGroup);
+                                if(message.MsgType === 1){//1表示文本
+                                    sendMessageById(realContent, targetGroup);
+                                }
+                                
+                                if(message.MsgType === 3){//3表示图片
+                                    getImage(realContent);
+                                    //sendImageById(realContent, targetGroup);
+                                }
                             });
                         }
                     });
