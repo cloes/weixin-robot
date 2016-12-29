@@ -489,7 +489,6 @@ function getAllGroupMembers(){
 
 
 //检测是否有新的消息
-//TODO:存在bug，每个连接都是长连接，请在上一个上连接返回后再发起下一个长连接
 function testSync(){
     return new Promise(function(resolve, reject){
         var resMessage = "";
@@ -638,6 +637,8 @@ function getMessageType(selector){
 function sendMessageById(content,destinationId) {
     var timestamp = new Date().getTime();
     var clientMsgId = timestamp.toString().substr(0,17) + Math.random().toString().substr(-4);
+    content = content.replace(/<br\/>/g, "\n");
+
     var postData = JSON.stringify({
         "BaseRequest": baseParams,
         "Msg": {
@@ -698,9 +699,6 @@ function handleMessage(messageObj){
                     syncOption.sourceMemberSelected.forEach((sourceMemberSelected)=>{
                         if(message.Content.substr(0,message.Content.indexOf(":")) === sourceMemberSelected){
                             syncOption.targetGroupSelected.forEach((targetGroup)=>{
-                                fs.appendFile('message_Content.txt', message.Content + "\r\n", 'utf8', ()=>{
-                                    //console.log("appendFile message_FromUserName_List finish!");
-                                });
                                 var realContent = message.Content.substr(message.Content.indexOf(">")+1);
                                 sendMessageById(realContent, targetGroup);
                             });
