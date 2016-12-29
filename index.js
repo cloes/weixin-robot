@@ -16,6 +16,8 @@ const xml2js = require('xml2js');
 
 const querystring = require('querystring');
 
+var XmlEntities = require('html-entities').XmlEntities;
+
 let mainWindow;
 
 let ipc = require('electron').ipcMain;
@@ -698,10 +700,20 @@ function sendImageById(content,destinationId){
 
 //通过xml格式的消息下载图片
 function getImage(content){
-    unescapeContent = unescape(content);
-    fs.writeFile('unescapeContent.txt', unescapeContent, 'utf8', ()=>{
+    content = content.replace(/<br\/>/g, "");
+
+    var entities = new XmlEntities();
+    content = entities.decode(content);
+
+    fs.writeFile('unescapeContent.txt', content, 'utf8', ()=>{
         //console.log("wirte unescapeContent.txt finish!");
     });
+
+    var xmlParser = new xml2js.Parser();
+    xmlParser.parseString(content, function (err, result) {
+
+    });
+
 }
 
 function handleMessage(messageObj){
