@@ -560,6 +560,8 @@ function testSync(){
     });
 }
 
+
+//TODO:这里还有set-cookie操作，要把该内容添加进去
 function getMessageType(selector){
     return new Promise(function(resolve, reject){
         var timestamp = new Date().getTime();
@@ -699,7 +701,8 @@ function sendImageById(content,destinationId){
 }
 
 //通过xml格式的消息下载图片
-function getImage(content){
+function getImage(msgID){
+    /*
     content = content.replace(/<br\/>/g, "");
 
     var entities = new XmlEntities();
@@ -712,6 +715,33 @@ function getImage(content){
     var xmlParser = new xml2js.Parser();
     xmlParser.parseString(content, function (err, result) {
 
+    });
+    */
+    var options = {
+        //rejectUnauthorized:true,
+        agent:false,
+        hostname: redirectUriObject.hostname,
+        path: "/cgi-bin/mmwebwx-bin/webwxgetmsgimg?MsgID=" + msgID + "&skey=%40" + skey,
+        method: 'GET',
+        headers: {
+            //'Content-Type': 'application/json;charset=UTF-8',
+            //'Content-Length': postData.length,
+            'Cookie': cookies,
+        }
+    };
+
+    var resMessage = "";
+    var req = https.request(options, (res) => {
+        res.setEncoding('utf8');
+        res.on('data', (chunk) => {
+            resMessage += chunk;
+        });
+        res.on('end', () => {
+            fs.writeFile('pic.jpeg', resMessage, 'utf8', ()=>{
+                //console.log("wirte unescapeContent.txt finish!");
+            });
+
+        });
     });
 
 }
@@ -730,7 +760,7 @@ function handleMessage(messageObj){
                                 }
                                 
                                 if(message.MsgType === 3){//3表示图片
-                                    getImage(realContent);
+                                    getImage(message.MsgId);
                                     //sendImageById(realContent, targetGroup);
                                 }
                             });
