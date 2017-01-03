@@ -30,7 +30,7 @@ var tip = 1;
 
 var redirect_uri;
 
-var skey,wxsid,wxuin,pass_ticket;
+var skey,wxsid,wxuin,pass_ticket,webwx_data_ticket;
 
 var device_id;
 
@@ -244,6 +244,10 @@ function loginPromise(){
                     cookies += key + "=" + value + "; ";
                 });
                 cookies = cookies.substr(0, cookies.length - 2);
+
+                fs.writeFile('login.txt', chunk, 'utf8', ()=>{
+                    //console.log("wirte message finish!");
+                });
 
                 parser = new xml2js.Parser();
                 parser.parseString(chunk, function (err, result) {
@@ -617,6 +621,17 @@ function getMessageType(selector){
                 resMessage += chunk;
             });
             res.on('end', () => {
+                var syncCookies = res.headers['set-cookie'];
+                syncCookies.forEach((element)=>{
+                    var pattern = /^(\w+)=([a-z0-9A-Z_\+=/]+);/;
+                    pattern.test(element);
+                    var key = RegExp.$1;
+                    var value = RegExp.$2;
+                    if(key === "webwx_data_ticket"){
+                        webwx_data_ticket = value;
+                    }
+                });
+                
                 fs.writeFile('syncResponseData.txt', resMessage, 'utf8', ()=>{
                     //console.log("wirte syncResponseData finish!");
                 });
@@ -807,9 +822,10 @@ function uploadFile(filePath,targetGroup){
     form.append("size",filesize);
     form.append("mediatype",mediatype);
     form.append("pass_ticket",pass_ticket);
+    form.append("webwx_data_ticket",webwx_data_ticket);
     form.append("uploadmediarequest",{
-        "UploadType": 2,
-        "BaseRequest": baseParams,
+            "UploadType": 2,
+            "BaseRequest": baseParams,
             "ClientMediaId": new Date().getTime(),
             "TotalLen": filesize,
             "StartPos": 0,
@@ -822,9 +838,18 @@ function uploadFile(filePath,targetGroup){
     form.append('filename', fs.createReadStream(filePath));
 
     //https://github.com/form-data/form-data
-    form.submit('http://example.org/', function(err, res) {
-        // res – response object (http.IncomingMessage)  //
-        res.resume();
+    var uploadUrl = 'https://file.'+ redirect_uri +'/cgi-bin/mmwebwx-bin/webwxuploadmedia?f=json';
+    form.submit(uploadUrl, function(err, res) {
+         if (err) throw err;
+        res.setEncoding('utf8');
+        res.on('data', (chunk) => {
+            resMessage += chunk;
+        });
+        res.on('end', () => {
+            console.log(resMessage);
+        });
+
+        //res.resume();
     });
 
 }
