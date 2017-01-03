@@ -700,28 +700,11 @@ function sendImageById(content,destinationId){
 
 //通过xml格式的消息下载图片
 function getImage(msgID){
-    /*
-    content = content.replace(/<br\/>/g, "");
-
-    var entities = new XmlEntities();
-    content = entities.decode(content);
-
-    fs.writeFile('unescapeContent.txt', content, 'utf8', ()=>{
-        //console.log("wirte unescapeContent.txt finish!");
-    });
-
-    var xmlParser = new xml2js.Parser();
-    xmlParser.parseString(content, function (err, result) {
-
-    });
-    */
-    
-    /*
     var options = {
         //rejectUnauthorized:true,
         agent:false,
         hostname: redirectUriObject.hostname,
-        path: "/cgi-bin/mmwebwx-bin/webwxgetmsgimg?MsgID=" + msgID + "&skey=%40" + skey,
+        path: "/cgi-bin/mmwebwx-bin/webwxgetmsgimg?MsgID=" + msgID + "&skey=" + skey,
         method: 'GET',
         headers: {
             //'Content-Type': 'application/json;charset=UTF-8',
@@ -729,28 +712,20 @@ function getImage(msgID){
             'Cookie': cookies,
         }
     };
-    */
-    
-    //imageUrl = redirectUriObject.hostname + "/cgi-bin/mmwebwx-bin/webwxgetmsgimg?MsgID=" + msgID + "&skey=" + skey;
-    var imageUrl = "https://www.baidu.com/img/bd_logo1.png";
-    console.log(imageUrl);
-    var file = fs.createWriteStream(msgID);
-    var request = https.get(imageUrl, function(imgResponse) {
-        console.log("begin wirte png file");
-        imgResponse.pipe(file);
-        
+
+    var file = fs.createWriteStream(msgID + ".png");
+    var request = https.get(options, function(response) {
+        response.pipe(file);
         file.on('finish', function() {
             file.close();  // close() is async, call cb after close completes.
-        }).on('error', function(err) { // Handle errors
-            fs.unlink(msgID); ;
+        }).on('error', function(err) {
+            console.log("wirte png file error");
+            fs.unlink(msgID + ".png");
         });
-
-
     });
-
-
-
+    
 }
+
 
 function handleMessage(messageObj){
     messageObj.AddMsgList.forEach((message)=>{
