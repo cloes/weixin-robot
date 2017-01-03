@@ -16,8 +16,6 @@ const xml2js = require('xml2js');
 
 const querystring = require('querystring');
 
-var XmlEntities = require('html-entities').XmlEntities;
-
 let mainWindow;
 
 let ipc = require('electron').ipcMain;
@@ -717,6 +715,8 @@ function getImage(msgID){
 
     });
     */
+    
+    /*
     var options = {
         //rejectUnauthorized:true,
         agent:false,
@@ -729,20 +729,26 @@ function getImage(msgID){
             'Cookie': cookies,
         }
     };
-
-    var resMessage = "";
-    var req = https.request(options, (res) => {
-        res.setEncoding('utf8');
-        res.on('data', (chunk) => {
-            resMessage += chunk;
+    */
+    
+    //imageUrl = redirectUriObject.hostname + "/cgi-bin/mmwebwx-bin/webwxgetmsgimg?MsgID=" + msgID + "&skey=" + skey;
+    var imageUrl = "https://www.baidu.com/img/bd_logo1.png";
+    console.log(imageUrl);
+    var file = fs.createWriteStream(msgID);
+    var request = https.get(imageUrl, function(imgResponse) {
+        console.log("begin wirte png file");
+        imgResponse.pipe(file);
+        
+        file.on('finish', function() {
+            file.close();  // close() is async, call cb after close completes.
+        }).on('error', function(err) { // Handle errors
+            fs.unlink(msgID); ;
         });
-        res.on('end', () => {
-            fs.writeFile('pic.jpeg', resMessage, 'utf8', ()=>{
-                //console.log("wirte unescapeContent.txt finish!");
-            });
 
-        });
+
     });
+
+
 
 }
 
