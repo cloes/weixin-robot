@@ -16,6 +16,8 @@ const xml2js = require('xml2js');
 
 const querystring = require('querystring');
 
+const crypto = require('crypto');
+
 let mainWindow;
 
 let ipc = require('electron').ipcMain;
@@ -88,6 +90,25 @@ function convertArrayToString(params) {
     }
     return output.substring(0, output.length - 1);
 }
+
+//时间格式化
+Date.prototype.Format = function(fmt){
+  var o = {   
+    "M+" : this.getMonth()+1,                 //月份   
+    "d+" : this.getDate(),                    //日   
+    "h+" : this.getHours(),                   //小时   
+    "m+" : this.getMinutes(),                 //分   
+    "s+" : this.getSeconds(),                 //秒   
+    "q+" : Math.floor((this.getMonth()+3)/3), //季度   
+    "S"  : this.getMilliseconds()             //毫秒   
+  };   
+  if(/(y+)/.test(fmt))   
+    fmt=fmt.replace(RegExp.$1, (this.getFullYear()+"").substr(4 - RegExp.$1.length));   
+  for(var k in o)   
+    if(new RegExp("("+ k +")").test(fmt))   
+  fmt = fmt.replace(RegExp.$1, (RegExp.$1.length==1) ? (o[k]) : (("00"+ o[k]).substr((""+ o[k]).length)));   
+  return fmt;   
+}  
 
 function getUuid() {
     return new Promise((resolve, reject) => {
@@ -705,7 +726,7 @@ function getImage(msgID){
         agent:false,
         hostname: redirectUriObject.hostname,
         path: "/cgi-bin/mmwebwx-bin/webwxgetmsgimg?MsgID=" + msgID + "&skey=" + skey,
-        method: 'GET',
+        //method: 'GET',
         headers: {
             //'Content-Type': 'application/json;charset=UTF-8',
             //'Content-Length': postData.length,
@@ -724,6 +745,88 @@ function getImage(msgID){
         });
     });
     
+}
+
+//上传文件
+function uploadFile(filePath,targetGroup){
+    var filename = filePath.substr(filePath.indexOf("/",filePath.length - 1));
+    var filesize;
+
+    fs.stat(filePath, (err, stats) => {
+        if (err) throw err;
+        filesize = stat.size;
+    });
+
+    var MD5 = crypto.createHash('MD5');
+    var FileMd5;
+
+    var input = fs.createReadStream(filePath);
+    input.on('readable', () => {
+        var data = input.read();
+        if (data)
+            MD5.update(data);
+        else {
+            FileMd5 = MD5.digest('hex');
+            console.log(MD5.digest('hex'));
+            //console.log(`${MD5.digest('hex')} ${filename}`);
+        }
+    });
+
+    //TODO:判断文件的mime
+    var filetype;
+    var mediatype = "pic";
+
+    var options = {
+        //rejectUnauthorized:true,
+        agent:false,
+        hostname: "file" + redirectUriObject.hostname,
+        path: "/cgi-bin/mmwebwx-bin/webwxuploadmedia?f=json",
+        headers: {
+            //'Content-Type': 'application/json;charset=UTF-8',
+            //'Content-Length': postData.length,
+            'Cookie': cookies,
+        }
+    };
+
+    var req = request.post(options, function (err, resp, body) {
+        if (err) {
+            console.log('Error!');
+        } else {
+            console.log('URL: ' + body);
+        }
+    });
+
+    var timeFormated = new Date().format("yyyy-MM-dd HH:mm:ss");
+    timeFormated = timeFormated + " GMT+0800 (CST)";
+
+    var form = req.form();
+    form.append("id","WU_FILE_2");
+    form.append("name",filename);
+    form.append("type","image/png");
+    form.append("lastModifiedDate", timeFormated);
+    form.append("size",filesize);
+    form.append("mediatype",mediatype);
+    form.append("pass_ticket",pass_ticket);
+    form.append("uploadmediarequest",{
+        "UploadType": 2,
+        "BaseRequest": baseParams,
+            "ClientMediaId": new Date().getTime(),
+            "TotalLen": filesize,
+            "StartPos": 0,
+            "DataLen": filesize,
+            "MediaType": 4,
+            "FromUserName": myAccount.UserName,
+            "ToUserName": targetGroup,
+            "FileMd5": FileMd5
+    });
+    form.append('filename', fs.createReadStream(filePath));
+
+    //https://github.com/form-data/form-data
+    form.submit('http://example.org/', function(err, res) {
+        // res – response object (http.IncomingMessage)  //
+        res.resume();
+    });
+
 }
 
 
