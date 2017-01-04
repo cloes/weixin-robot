@@ -20,6 +20,12 @@ const crypto = require('crypto');
 
 const request = require('request');
 
+const dateFormat = require('dateformat');
+
+const FormData = require('form-data');
+
+const now = new Date();
+
 let mainWindow;
 
 let ipc = require('electron').ipcMain;
@@ -92,25 +98,6 @@ function convertArrayToString(params) {
     }
     return output.substring(0, output.length - 1);
 }
-
-//时间格式化
-Date.prototype.Format = function(fmt){
-  var o = {   
-    "M+" : this.getMonth()+1,                 //月份   
-    "d+" : this.getDate(),                    //日   
-    "h+" : this.getHours(),                   //小时   
-    "m+" : this.getMinutes(),                 //分   
-    "s+" : this.getSeconds(),                 //秒   
-    "q+" : Math.floor((this.getMonth()+3)/3), //季度   
-    "S"  : this.getMilliseconds()             //毫秒   
-  };   
-  if(/(y+)/.test(fmt))   
-    fmt=fmt.replace(RegExp.$1, (this.getFullYear()+"").substr(4 - RegExp.$1.length));   
-  for(var k in o)   
-    if(new RegExp("("+ k +")").test(fmt))   
-  fmt = fmt.replace(RegExp.$1, (RegExp.$1.length==1) ? (o[k]) : (("00"+ o[k]).substr((""+ o[k]).length)));   
-  return fmt;   
-}  
 
 function getUuid() {
     return new Promise((resolve, reject) => {
@@ -770,92 +757,119 @@ function getImage(msgID){
 
 //上传文件
 function uploadFile(filePath,targetGroup){
-    console.log("here is uploadFile");
     var filename = filePath.substr(filePath.lastIndexOf("/") + 1);
 
     var stats = fs.statSync(filePath);
     var filesize = stats.size;
 
-    var MD5 = crypto.createHash('MD5');
-    var FileMd5;
 
-    var input = fs.createReadStream(filePath);
-    input.on('readable', () => {
-        var data = input.read();
-        if (data)
-            MD5.update(data);
-        else {
-            FileMd5 = MD5.digest('hex');
-            console.log(MD5.digest('hex'));
-            //console.log(`${MD5.digest('hex')} ${filename}`);
-        }
-    });
+    var MD5Promise = new Promise(function(resolve,reject){
+        var MD5 = crypto.createHash('MD5');
+        var fileMd5;
 
-    //TODO:判断文件的mime
-    var filetype;
-    var mediatype = "pic";
-
-    var options = {
-        //rejectUnauthorized:true,
-        agent:false,
-        hostname: "file" + redirectUriObject.hostname,
-        path: "/cgi-bin/mmwebwx-bin/webwxuploadmedia?f=json",
-        headers: {
-            //'Content-Type': 'application/json;charset=UTF-8',
-            //'Content-Length': postData.length,
-            'Cookie': cookies,
-        }
-    };
-
-    var req = request.post(options, function (err, resp, body) {
-        if (err) {
-            console.log('Error!');
-        } else {
-            console.log('URL: ' + body);
-        }
-    });
-
-    var timeFormated = new Date().format("yyyy-MM-dd HH:mm:ss");
-    timeFormated = timeFormated + " GMT+0800 (CST)";
-
-    var form = req.form();
-    form.append("id","WU_FILE_2");
-    form.append("name",filename);
-    form.append("type","image/png");
-    form.append("lastModifiedDate", timeFormated);
-    form.append("size",filesize);
-    form.append("mediatype",mediatype);
-    form.append("pass_ticket",pass_ticket);
-    form.append("webwx_data_ticket",webwx_data_ticket);
-    form.append("uploadmediarequest",{
-            "UploadType": 2,
-            "BaseRequest": baseParams,
-            "ClientMediaId": new Date().getTime(),
-            "TotalLen": filesize,
-            "StartPos": 0,
-            "DataLen": filesize,
-            "MediaType": 4,
-            "FromUserName": myAccount.UserName,
-            "ToUserName": targetGroup,
-            "FileMd5": FileMd5
-    });
-    form.append('filename', fs.createReadStream(filePath));
-
-    //https://github.com/form-data/form-data
-    var uploadUrl = 'https://file.'+ redirect_uri +'/cgi-bin/mmwebwx-bin/webwxuploadmedia?f=json';
-    form.submit(uploadUrl, function(err, res) {
-         if (err) throw err;
-        res.setEncoding('utf8');
-        res.on('data', (chunk) => {
-            resMessage += chunk;
+        var input = fs.createReadStream(filePath);
+        input.on('readable', () => {
+            var data = input.read();
+            if (data)
+                MD5.update(data);
+            else {
+                fileMd5 = MD5.digest('hex');
+                resolve(fileMd5);
+            }
         });
-        res.on('end', () => {
-            console.log(resMessage);
+    });
+
+    MD5Promise.then((fileMd5)=>{
+        //TODO:判断文件的mime
+        var filetype;
+        var mediatype = "pic";
+
+        var timeFormated = dateFormat(now) + " GMT+0800 (CST)";
+
+        
+        var form = new FormData();
+        form.append("id","WU_FILE_2");
+        form.append("name",filename);
+        form.append("type","image/png");
+        form.append("lastModifiedDate", timeFormated);
+        form.append("size",filesize);
+        form.append("mediatype",mediatype);
+        form.append("pass_ticket",pass_ticket);
+        form.append("webwx_data_ticket",webwx_data_ticket);
+        form.append("uploadmediarequest",JSON.stringify({
+                "UploadType": 2,
+                "BaseRequest": baseParams,
+                "ClientMediaId": new Date().getTime(),
+                "TotalLen": filesize,
+                "StartPos": 0,
+                "DataLen": filesize,
+                "MediaType": 4,
+                "FromUserName": myAccount.UserName,
+                "ToUserName": targetGroup,
+                "FileMd5": fileMd5
+        }));
+        form.append('filename', fs.createReadStream(filePath));
+
+        var options = {
+            rejectUnauthorized:true,
+            agent:false,
+            hostname: "file." + redirectUriObject.hostname,
+            path: "/cgi-bin/mmwebwx-bin/webwxuploadmedia?f=json",
+            headers: {
+                //'Content-Type': 'application/json;charset=UTF-8',
+                //'Content-Length': postData.length,
+                'Cookie': cookies,
+            },
+        };
+
+        fs.writeFile('uploadfile_option.txt', JSON.stringify(options), 'utf8', ()=>{
+            console.log("wirte uploadfile_option.txt finish!");
         });
 
-        //res.resume();
-    });
+        fs.writeFile('getBoundary.txt', form.getBoundary(), 'utf8', ()=>{
+            console.log("wirte getBoundary.txt finish!");
+        });
 
+
+        var resMessage;
+        var req = https.request(options, (res) =>{
+            res.setEncoding('utf8');
+            res.on('data', (chunk) => {
+                resMessage += chunk;
+                console.log(`data: ${resMessage}`);
+            });
+            res.on('end', () => {
+                console.log(`end: ${resMessage}`);
+            });
+        });
+        form.pipe(req);
+        //req.end();
+
+        req.on('response', function(res) {
+            console.log(`code: ${res.statusCode}`);
+            console.log(`body: ${res.body}`);
+        });
+
+
+        
+
+        //https://github.com/form-data/form-data
+        /*
+        var uploadUrl = 'https://file.'+ redirect_uri +'/cgi-bin/mmwebwx-bin/webwxuploadmedia?f=json';
+        form.submit(uploadUrl, function(err, res) {
+            if (err) throw err;
+            res.setEncoding('utf8');
+            res.on('data', (chunk) => {
+                resMessage += chunk;
+            });
+            res.on('end', () => {
+                console.log(resMessage);
+            });
+
+            //res.resume();
+        });
+        */
+    });
 }
 
 
