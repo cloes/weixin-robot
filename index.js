@@ -18,6 +18,8 @@ const querystring = require('querystring');
 
 const crypto = require('crypto');
 
+const request = require('request');
+
 let mainWindow;
 
 let ipc = require('electron').ipcMain;
@@ -734,43 +736,45 @@ function sendImageById(content,destinationId){
 
 }
 
-//通过xml格式的消息下载图片
+//下载图片
 function getImage(msgID){
-    var options = {
-        //rejectUnauthorized:true,
-        agent:false,
-        hostname: redirectUriObject.hostname,
-        path: "/cgi-bin/mmwebwx-bin/webwxgetmsgimg?MsgID=" + msgID + "&skey=" + skey,
-        //method: 'GET',
-        headers: {
-            //'Content-Type': 'application/json;charset=UTF-8',
-            //'Content-Length': postData.length,
-            'Cookie': cookies,
-        }
-    };
+    return new Promise(function(resolve, reject){
+        var options = {
+            //rejectUnauthorized:true,
+            agent:false,
+            hostname: redirectUriObject.hostname,
+            path: "/cgi-bin/mmwebwx-bin/webwxgetmsgimg?MsgID=" + msgID + "&skey=" + skey,
+            //method: 'GET',
+            headers: {
+                //'Content-Type': 'application/json;charset=UTF-8',
+                //'Content-Length': postData.length,
+                'Cookie': cookies,
+            }
+        };
 
-    var file = fs.createWriteStream(msgID + ".png");
-    var request = https.get(options, function(response) {
-        response.pipe(file);
-        file.on('finish', function() {
-            file.close();  // close() is async, call cb after close completes.
-        }).on('error', function(err) {
-            console.log("wirte png file error");
-            fs.unlink(msgID + ".png");
+        var file = fs.createWriteStream("./img/" + msgID + ".png");
+        var request = https.get(options, function(response) {
+            response.pipe(file);
+            file.on('finish', function() {
+                var filePath = "./img/" + msgID + ".png";
+                resolve(filePath);
+                file.close();  // close() is async, call cb after close completes.
+            }).on('error', function(err) {
+                console.log("wirte png file error");
+                fs.unlink(msgID + ".png");
+            });
         });
+
     });
-    
 }
 
 //上传文件
 function uploadFile(filePath,targetGroup){
-    var filename = filePath.substr(filePath.indexOf("/",filePath.length - 1));
-    var filesize;
+    console.log("here is uploadFile");
+    var filename = filePath.substr(filePath.lastIndexOf("/") + 1);
 
-    fs.stat(filePath, (err, stats) => {
-        if (err) throw err;
-        filesize = stat.size;
-    });
+    var stats = fs.statSync(filePath);
+    var filesize = stats.size;
 
     var MD5 = crypto.createHash('MD5');
     var FileMd5;
@@ -869,7 +873,15 @@ function handleMessage(messageObj){
                                 }
                                 
                                 if(message.MsgType === 3){//3表示图片
-                                    getImage(message.MsgId);
+                                    getImagePromise = getImage(message.MsgId);
+                                    getImagePromise
+                                    .then((filePath)=>{
+                                        return uploadFile(filePath,targetGroup);
+                                    })
+                                    .then(()=>{
+                                        //sendImageById()
+                                    });
+                                    //getImage(message.MsgId);
                                     //sendImageById(realContent, targetGroup);
                                 }
                             });
