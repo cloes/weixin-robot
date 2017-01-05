@@ -788,7 +788,7 @@ function uploadFile(filePath,targetGroup){
 
         
         var form = new FormData();
-        form.append("id","WU_FILE_2");
+        form.append("id","WU_FILE_0");
         form.append("name",filename);
         form.append("type","image/png");
         form.append("lastModifiedDate", timeFormated);
@@ -799,7 +799,7 @@ function uploadFile(filePath,targetGroup){
         form.append("uploadmediarequest",JSON.stringify({
                 "UploadType": 2,
                 "BaseRequest": baseParams,
-                "ClientMediaId": new Date().getTime(),
+                "ClientMediaId": "e" + new Date().getTime(),
                 "TotalLen": filesize,
                 "StartPos": 0,
                 "DataLen": filesize,
@@ -815,9 +815,13 @@ function uploadFile(filePath,targetGroup){
             agent:false,
             hostname: "file." + redirectUriObject.hostname,
             path: "/cgi-bin/mmwebwx-bin/webwxuploadmedia?f=json",
+            // hostname: "192.168.1.150",
+            // path: "/index.php",
+            method: 'POST',
             headers: {
                 //'Content-Type': 'application/json;charset=UTF-8',
                 //'Content-Length': postData.length,
+                'Content-Type': 'multipart/form-data; boundary=' + form.getBoundary(),
                 'Cookie': cookies,
             },
         };
@@ -832,6 +836,7 @@ function uploadFile(filePath,targetGroup){
 
 
         var resMessage;
+        //var req = http.request(options, (res) =>{
         var req = https.request(options, (res) =>{
             res.setEncoding('utf8');
             res.on('data', (chunk) => {
