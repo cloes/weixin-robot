@@ -710,8 +710,13 @@ function sendMessageById(content,destinationId) {
             resMessage += chunk;
         });
         res.on('end', () => {
-            console.log(resMessage);
-
+            //console.log(resMessage);
+            var responseObject = JSON.parse(resMessage);
+            if(responseObject.Ret === 0){
+                console.log("send txt message success");
+            }else{
+                console.log(`send txt message fail, Ret is ${responseObject.Ret}`);
+            }
         });
     });
     req.write(postData);
@@ -719,7 +724,48 @@ function sendMessageById(content,destinationId) {
 }
 
 //根据用户的id发送图片
-function sendImageById(content,destinationId){
+function sendMessageImageById(mediaId,destinationId){
+    var clientMsgId = timestamp.toString().substr(0,17) + Math.random().toString().substr(-4);
+
+    var postData = JSON.stringify({
+        "BaseRequest": baseParams,
+        "Msg": {
+            "Type": 3,
+            "MediaId":mediaId,
+            "FromUserName":myAccount.UserName,
+            "ToUserName":destinationId,
+            "LocalID": clientMsgId,
+            "ClientMsgId": clientMsgId,
+        },
+        "Scene":0
+    });
+
+    var options = {
+        //rejectUnauthorized:true,
+        agent:false,
+        hostname: redirectUriObject.hostname,
+        path: "/cgi-bin/mmwebwx-bin/webwxsendmsgimg?fun=async&f=json",
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json;charset=UTF-8',
+            'Content-Length': postData.length,
+            'Cookie': cookies,
+        }
+    };
+
+    var resMessage = "";
+    
+    var req = https.request(options, (res) => {
+        res.setEncoding('utf8');
+        res.on('data', (chunk) => {
+            resMessage += chunk;
+        });
+        res.on('end', () => {
+            console.log(resMessage);
+        });
+    });
+    req.write(postData);
+    req.end();
 
 }
 
@@ -757,123 +803,122 @@ function getImage(msgID){
 
 //上传文件
 function uploadFile(filePath,targetGroup){
-    var filename = filePath.substr(filePath.lastIndexOf("/") + 1);
+    return new Promise(function(resolve,reject){
+        var filename = filePath.substr(filePath.lastIndexOf("/") + 1);
 
-    var stats = fs.statSync(filePath);
-    var filesize = stats.size;
+        var stats = fs.statSync(filePath);
+        var filesize = stats.size;
 
-    //TODO:将MD5功能抽离出一个独立函数
-    var MD5Promise = new Promise(function(resolve,reject){
-        var MD5 = crypto.createHash('MD5');
-        var fileMd5;
+        //TODO:将MD5功能抽离出一个独立函数
+        var MD5Promise = new Promise(function(MD5PromiseResolve,MD5PromiseReject){
+            var MD5 = crypto.createHash('MD5');
+            var fileMd5;
 
-        var input = fs.createReadStream(filePath);
-        input.on('readable', () => {
-            var data = input.read();
-            if (data)
-                MD5.update(data);
-            else {
-                fileMd5 = MD5.digest('hex');
-                resolve(fileMd5);
-            }
-        });
-    });
-
-    MD5Promise.then((fileMd5)=>{
-        //TODO:判断文件的mime
-        var filetype;
-        var mediatype = "pic";
-
-        var timeFormated = dateFormat(now) + " GMT+0800 (CST)";
-
-        
-        var form = new FormData();
-        form.append("id","WU_FILE_0");
-        form.append("name",filename);
-        form.append("type","image/png");
-        form.append("lastModifiedDate", timeFormated);
-        form.append("size",filesize);
-        form.append("mediatype",mediatype);
-        form.append("pass_ticket",pass_ticket);
-        form.append("webwx_data_ticket",webwx_data_ticket);
-        form.append("uploadmediarequest",JSON.stringify({
-                "UploadType": 2,
-                "BaseRequest": baseParams,
-                "ClientMediaId": "e" + new Date().getTime(),
-                "TotalLen": filesize,
-                "StartPos": 0,
-                "DataLen": filesize,
-                "MediaType": 4,
-                "FromUserName": myAccount.UserName,
-                "ToUserName": targetGroup,
-                "FileMd5": fileMd5
-        }));
-        form.append('filename', fs.createReadStream(filePath));
-
-        var options = {
-            rejectUnauthorized:true,
-            agent:false,
-            hostname: "file." + redirectUriObject.hostname,
-            path: "/cgi-bin/mmwebwx-bin/webwxuploadmedia?f=json",
-            // hostname: "192.168.1.150",
-            // path: "/index.php",
-            method: 'POST',
-            headers: {
-                //'Content-Type': 'application/json;charset=UTF-8',
-                //'Content-Length': postData.length,
-                'Content-Type': 'multipart/form-data; boundary=' + form.getBoundary(),
-                'Cookie': cookies,
-            },
-        };
-
-        fs.writeFile('uploadfile_option.txt', JSON.stringify(options), 'utf8', ()=>{
-            console.log("wirte uploadfile_option.txt finish!");
-        });
-
-        fs.writeFile('getBoundary.txt', form.getBoundary(), 'utf8', ()=>{
-            console.log("wirte getBoundary.txt finish!");
-        });
-
-
-        var resMessage = "";
-        //var req = http.request(options, (res) =>{
-        var req = https.request(options, (res) =>{
-            res.setEncoding('utf8');
-            res.on('data', (chunk) => {
-                resMessage += chunk;
-                console.log(`data: ${resMessage}`);
-            });
-            res.on('end', () => {
-                console.log(`end: ${resMessage}`);
+            var input = fs.createReadStream(filePath);
+            input.on('readable', () => {
+                var data = input.read();
+                if (data)
+                    MD5.update(data);
+                else {
+                    fileMd5 = MD5.digest('hex');
+                    MD5PromiseResolve(fileMd5);
+                }
             });
         });
-        form.pipe(req);
-        //req.end();
 
-        req.on('response', function(res) {
-            console.log(`code: ${res.statusCode}`);
-            console.log(`body: ${res.body}`);
-        });
+        MD5Promise.then((fileMd5)=>{
+            //TODO:判断文件的mime
+            var filetype;
+            var mediatype = "pic";
+            var timeFormated = dateFormat(now) + " GMT+0800 (CST)";
+            
+            var form = new FormData();
+            form.append("id","WU_FILE_0");
+            form.append("name",filename);
+            form.append("type","image/png");
+            form.append("lastModifiedDate", timeFormated);
+            form.append("size",filesize);
+            form.append("mediatype",mediatype);
+            form.append("pass_ticket",pass_ticket);
+            form.append("webwx_data_ticket",webwx_data_ticket);
+            form.append("uploadmediarequest",JSON.stringify({
+                    "UploadType": 2,
+                    "BaseRequest": baseParams,
+                    "ClientMediaId": "e" + new Date().getTime(),
+                    "TotalLen": filesize,
+                    "StartPos": 0,
+                    "DataLen": filesize,
+                    "MediaType": 4,
+                    "FromUserName": myAccount.UserName,
+                    "ToUserName": targetGroup,
+                    "FileMd5": fileMd5
+            }));
+            form.append('filename', fs.createReadStream(filePath));
 
+            var options = {
+                rejectUnauthorized:true,
+                agent:false,
+                hostname: "file." + redirectUriObject.hostname,
+                path: "/cgi-bin/mmwebwx-bin/webwxuploadmedia?f=json",
+                // hostname: "192.168.1.150",
+                // path: "/index.php",
+                method: 'POST',
+                headers: {
+                    //'Content-Type': 'application/json;charset=UTF-8',
+                    //'Content-Length': postData.length,
+                    'Content-Type': 'multipart/form-data; boundary=' + form.getBoundary(),
+                    'Cookie': cookies,
+                },
+            };
 
-        
-
-        //https://github.com/form-data/form-data
-        /*
-        var uploadUrl = 'https://file.'+ redirect_uri +'/cgi-bin/mmwebwx-bin/webwxuploadmedia?f=json';
-        form.submit(uploadUrl, function(err, res) {
-            if (err) throw err;
-            res.setEncoding('utf8');
-            res.on('data', (chunk) => {
-                resMessage += chunk;
+            fs.writeFile('uploadfile_option.txt', JSON.stringify(options), 'utf8', ()=>{
+                console.log("wirte uploadfile_option.txt finish!");
             });
-            res.on('end', () => {
-                console.log(resMessage);
+
+            fs.writeFile('getBoundary.txt', form.getBoundary(), 'utf8', ()=>{
+                console.log("wirte getBoundary.txt finish!");
             });
 
-            //res.resume();
+
+            var resMessage = "";
+            //var req = http.request(options, (res) =>{
+            var req = https.request(options, (res) =>{
+                res.setEncoding('utf8');
+                res.on('data', (chunk) => {
+                    resMessage += chunk;
+                    console.log(`data: ${resMessage}`);
+                });
+                res.on('end', () => {
+                    console.log(`end: ${resMessage}`);
+                    var responseObject = JSON.parse(resMessage);
+                    resolve(responseObject.MediaId);
+                });
+            });
+            form.pipe(req);
+            //req.end();
+
+            req.on('response', function(res) {
+                console.log(`code: ${res.statusCode}`);
+                console.log(`body: ${res.body}`);
+            });
+
+            //https://github.com/form-data/form-data
+            /*
+            var uploadUrl = 'https://file.'+ redirect_uri +'/cgi-bin/mmwebwx-bin/webwxuploadmedia?f=json';
+            form.submit(uploadUrl, function(err, res) {
+                if (err) throw err;
+                res.setEncoding('utf8');
+                res.on('data', (chunk) => {
+                    resMessage += chunk;
+                });
+                res.on('end', () => {
+                    console.log(resMessage);
+                });
+
+                //res.resume();
+            });
+            */
         });
-        */
     });
 }
 
@@ -898,7 +943,7 @@ function handleMessage(messageObj){
                                         return uploadFile(filePath,targetGroup);
                                     })
                                     .then(()=>{
-                                        //sendImageById()
+                                        //return sendMessageImageById();
                                     });
                                     //getImage(message.MsgId);
                                     //sendImageById(realContent, targetGroup);
