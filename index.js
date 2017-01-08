@@ -762,7 +762,7 @@ function uploadFile(filePath,targetGroup){
     var stats = fs.statSync(filePath);
     var filesize = stats.size;
 
-
+    //TODO:将MD5功能抽离出一个独立函数
     var MD5Promise = new Promise(function(resolve,reject){
         var MD5 = crypto.createHash('MD5');
         var fileMd5;
@@ -835,7 +835,7 @@ function uploadFile(filePath,targetGroup){
         });
 
 
-        var resMessage;
+        var resMessage = "";
         //var req = http.request(options, (res) =>{
         var req = https.request(options, (res) =>{
             res.setEncoding('utf8');
