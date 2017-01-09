@@ -574,7 +574,7 @@ function testSync(){
 
 
 //TODO:这里还有set-cookie操作，要把该内容添加进去
-function getMessageType(selector){
+function getMessageContentAndUpdateSynckey(selector){
     return new Promise(function(resolve, reject){
         var timestamp = new Date().getTime();
         timestamp = timestamp.toString().substr(0,10);
@@ -621,9 +621,7 @@ function getMessageType(selector){
                     }
                 });
                 
-                fs.writeFile('syncResponseData.txt', resMessage, 'utf8', ()=>{
-                    //console.log("wirte syncResponseData finish!");
-                });
+
                 var responseObj = JSON.parse(resMessage);
                 if(responseObj.BaseResponse.Ret == 0){
                     newSyncKey = "";
@@ -635,6 +633,23 @@ function getMessageType(selector){
                     syncKey = newSyncKey;
                     SyncKeyObj = responseObj.SyncKey;
                     console.log("update synckey");
+                    fs.appendFile('syncKey.txt', syncKey + "\r\n", 'utf8', ()=>{
+                        //console.log("wirte sendMessageById_postdata.txt finish!");
+                    });
+
+
+                    newSyncCheckKey = "";
+                    for(var i = 0; i < responseObj.SyncCheckKey.Count; i++){
+                        newSyncCheckKey += responseObj.SyncCheckKey.List[i].Key + "_" + responseObj.SyncCheckKey.List[i].Val + "|";
+                    }
+                    //newSyncCheckKey = newSyncCheckKey.substr(0, newSyncCheckKey.length - 1);
+
+                    fs.appendFile('syncKey.txt', newSyncCheckKey + "\r\n", 'utf8', ()=>{
+                        //console.log("wirte sendMessageById_postdata.txt finish!");
+                    });
+
+
+
                     getMessage();
                     
                     switch(selector){
@@ -681,9 +696,11 @@ function sendMessageById(content,destinationId) {
 
     postData = new Buffer(postData,"utf8");
 
+    /*
     fs.appendFile('sendMessageById_postdata.txt', postData + "\r\n", 'utf8', ()=>{
         console.log("wirte sendMessageById_postdata.txt finish!");
     });
+    */
 
     var options = {
         //rejectUnauthorized:true,
@@ -698,9 +715,11 @@ function sendMessageById(content,destinationId) {
         }
     };
 
+    /*
     fs.writeFile('sendMessageById_option.txt', JSON.stringify(options), 'utf8', ()=>{
         console.log("wirte sendMessageById_option.txt finish!");
     });
+    */
 
     var resMessage = "";
     
@@ -710,7 +729,6 @@ function sendMessageById(content,destinationId) {
             resMessage += chunk;
         });
         res.on('end', () => {
-            console.log(resMessage);
             var responseObject = JSON.parse(resMessage);
             if(responseObject.BaseResponse.Ret === 0){
                 console.log("send txt message success");
@@ -725,9 +743,9 @@ function sendMessageById(content,destinationId) {
 
 //根据用户的id发送图片
 function sendMessageImageById(mediaId,destinationId){
-    console(`mediaId is ${mediaId}, destid is${destinationId}`);
+    var timestamp = new Date().getTime();
     var clientMsgId = timestamp.toString().substr(0,17) + Math.random().toString().substr(-4);
-
+    
     var postData = JSON.stringify({
         "BaseRequest": baseParams,
         "Msg": {
@@ -739,6 +757,10 @@ function sendMessageImageById(mediaId,destinationId){
             "ClientMsgId": clientMsgId,
         },
         "Scene":0
+    });
+
+    fs.writeFile('sendMessageImageById_postData.txt', postData, 'utf8', ()=>{
+        //console.log("wirte syncResponseData finish!");
     });
 
     var options = {
@@ -754,8 +776,12 @@ function sendMessageImageById(mediaId,destinationId){
         }
     };
 
-    var resMessage = "";
+    fs.writeFile('sendMessageImageById_option.txt', JSON.stringify(options), 'utf8', ()=>{
+        //console.log("wirte syncResponseData finish!");
+    });
+
     
+    var resMessage = "";
     var req = https.request(options, (res) => {
         res.setEncoding('utf8');
         res.on('data', (chunk) => {
@@ -767,7 +793,7 @@ function sendMessageImageById(mediaId,destinationId){
     });
     req.write(postData);
     req.end();
-
+    
 }
 
 //下载图片
@@ -872,6 +898,7 @@ function uploadFile(filePath,targetGroup){
                 },
             };
 
+            /*
             fs.writeFile('uploadfile_option.txt', JSON.stringify(options), 'utf8', ()=>{
                 console.log("wirte uploadfile_option.txt finish!");
             });
@@ -879,7 +906,7 @@ function uploadFile(filePath,targetGroup){
             fs.writeFile('getBoundary.txt', form.getBoundary(), 'utf8', ()=>{
                 console.log("wirte getBoundary.txt finish!");
             });
-
+            */
 
             var resMessage = "";
             //var req = http.request(options, (res) =>{
@@ -889,21 +916,18 @@ function uploadFile(filePath,targetGroup){
                     resMessage += chunk;
                 });
                 res.on('end', () => {
-                    //console.log(`end: ${resMessage}`);
+                    console.log(`end: ${resMessage}`);
                     var responseObject = JSON.parse(resMessage);
                     resolve(responseObject.MediaId);
                 });
             });
             form.pipe(req);
 
-            /*
-            req.on('response', function(res) {
-                console.log(`code: ${res.statusCode}`);
-                console.log(`body: ${res.body}`);
-            });
-            */
-
         });
+
+
+
+
     });
 }
 
@@ -928,7 +952,7 @@ function handleMessage(messageObj){
                                         return uploadFile(filePath,targetGroup);
                                     })
                                     .then((mediaId)=>{
-                                        return sendMessageImageById(mediaId,targetGroup);
+                                        sendMessageImageById(mediaId,targetGroup);
                                     });
                                     //getImage(message.MsgId);
                                     //sendImageById(realContent, targetGroup);
@@ -943,6 +967,8 @@ function handleMessage(messageObj){
         }
     });
 }
+
+
 
 function getSyncOption(){
     ipc.on('sendSyncOption', (event, arg) => {
@@ -960,7 +986,7 @@ function getMessage(){
     testSyncPromise.then((selector)=>{
         console.log("testSync OK");
         //console.log(`selector is ${selector}`);
-        return getMessageType(selector);
+        return getMessageContentAndUpdateSynckey(selector);
     },()=>{console.log("testSync not OK");})
     .then((responseObject)=>{
         handleMessage(responseObject);
