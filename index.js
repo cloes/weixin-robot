@@ -710,12 +710,12 @@ function sendMessageById(content,destinationId) {
             resMessage += chunk;
         });
         res.on('end', () => {
-            //console.log(resMessage);
+            console.log(resMessage);
             var responseObject = JSON.parse(resMessage);
-            if(responseObject.Ret === 0){
+            if(responseObject.BaseResponse.Ret === 0){
                 console.log("send txt message success");
             }else{
-                console.log(`send txt message fail, Ret is ${responseObject.Ret}`);
+                console.log(`send txt message fail, Ret is ${responseObject.BaseResponse.Ret}`);
             }
         });
     });
@@ -725,6 +725,7 @@ function sendMessageById(content,destinationId) {
 
 //根据用户的id发送图片
 function sendMessageImageById(mediaId,destinationId){
+    console(`mediaId is ${mediaId}, destid is${destinationId}`);
     var clientMsgId = timestamp.toString().substr(0,17) + Math.random().toString().substr(-4);
 
     var postData = JSON.stringify({
@@ -886,38 +887,22 @@ function uploadFile(filePath,targetGroup){
                 res.setEncoding('utf8');
                 res.on('data', (chunk) => {
                     resMessage += chunk;
-                    console.log(`data: ${resMessage}`);
                 });
                 res.on('end', () => {
-                    console.log(`end: ${resMessage}`);
+                    //console.log(`end: ${resMessage}`);
                     var responseObject = JSON.parse(resMessage);
                     resolve(responseObject.MediaId);
                 });
             });
             form.pipe(req);
-            //req.end();
 
+            /*
             req.on('response', function(res) {
                 console.log(`code: ${res.statusCode}`);
                 console.log(`body: ${res.body}`);
             });
-
-            //https://github.com/form-data/form-data
-            /*
-            var uploadUrl = 'https://file.'+ redirect_uri +'/cgi-bin/mmwebwx-bin/webwxuploadmedia?f=json';
-            form.submit(uploadUrl, function(err, res) {
-                if (err) throw err;
-                res.setEncoding('utf8');
-                res.on('data', (chunk) => {
-                    resMessage += chunk;
-                });
-                res.on('end', () => {
-                    console.log(resMessage);
-                });
-
-                //res.resume();
-            });
             */
+
         });
     });
 }
@@ -942,8 +927,8 @@ function handleMessage(messageObj){
                                     .then((filePath)=>{
                                         return uploadFile(filePath,targetGroup);
                                     })
-                                    .then(()=>{
-                                        //return sendMessageImageById();
+                                    .then((mediaId)=>{
+                                        return sendMessageImageById(mediaId,targetGroup);
                                     });
                                     //getImage(message.MsgId);
                                     //sendImageById(realContent, targetGroup);
