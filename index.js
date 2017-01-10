@@ -761,10 +761,6 @@ function sendMessageImageById(mediaId,destinationId){
         "Scene":0
     });
 
-    fs.writeFile('sendMessageImageById_postData.txt', postData, 'utf8', ()=>{
-        //console.log("wirte syncResponseData finish!");
-    });
-
     var options = {
         //rejectUnauthorized:true,
         agent:false,
@@ -778,11 +774,6 @@ function sendMessageImageById(mediaId,destinationId){
         }
     };
 
-    fs.writeFile('sendMessageImageById_option.txt', JSON.stringify(options), 'utf8', ()=>{
-        //console.log("wirte syncResponseData finish!");
-    });
-
-    
     var resMessage = "";
     var req = https.request(options, (res) => {
         res.setEncoding('utf8');
@@ -808,8 +799,6 @@ function getImage(msgID){
             path: "/cgi-bin/mmwebwx-bin/webwxgetmsgimg?MsgID=" + msgID + "&skey=" + skey,
             //method: 'GET',
             headers: {
-                //'Content-Type': 'application/json;charset=UTF-8',
-                //'Content-Length': postData.length,
                 'Cookie': cookies,
             }
         };
@@ -820,7 +809,7 @@ function getImage(msgID){
             file.on('finish', function() {
                 var filePath = "./img/" + msgID + ".png";
                 resolve(filePath);
-                file.close();  // close() is async, call cb after close completes.
+                file.close();
             }).on('error', function(err) {
                 console.log("wirte png file error");
                 fs.unlink(msgID + ".png");
@@ -889,19 +878,14 @@ function uploadFile(filePath,targetGroup){
                 agent:false,
                 hostname: "file." + redirectUriObject.hostname,
                 path: "/cgi-bin/mmwebwx-bin/webwxuploadmedia?f=json",
-                // hostname: "192.168.1.150",
-                // path: "/index.php",
                 method: 'POST',
                 headers: {
-                    //'Content-Type': 'application/json;charset=UTF-8',
-                    //'Content-Length': postData.length,
                     'Content-Type': 'multipart/form-data; boundary=' + form.getBoundary(),
                     'Cookie': cookies,
                 },
             };
 
             var resMessage = "";
-            //var req = http.request(options, (res) =>{
             var req = https.request(options, (res) =>{
                 res.setEncoding('utf8');
                 res.on('data', (chunk) => {
@@ -942,8 +926,6 @@ function handleMessage(messageObj){
                                     .then((mediaId)=>{
                                         sendMessageImageById(mediaId,targetGroup);
                                     });
-                                    //getImage(message.MsgId);
-                                    //sendImageById(realContent, targetGroup);
                                 }
                             });
                         }
@@ -984,10 +966,7 @@ function getMessage(){
 
 function processMessage(){
     getSyncOption();
-
     getMessage();
-    //setInterval(getMessage,1000);
-
 }
 
 app.on('ready',()=>{
