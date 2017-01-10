@@ -642,13 +642,15 @@ function getMessageContentAndUpdateSynckey(selector){
                     for(var i = 0; i < responseObj.SyncCheckKey.Count; i++){
                         newSyncCheckKey += responseObj.SyncCheckKey.List[i].Key + "_" + responseObj.SyncCheckKey.List[i].Val + "|";
                     }
-                    //newSyncCheckKey = newSyncCheckKey.substr(0, newSyncCheckKey.length - 1);
+                    newSyncCheckKey = newSyncCheckKey.substr(0, newSyncCheckKey.length - 1);
 
-                    fs.appendFile('syncKey.txt', newSyncCheckKey + "\r\n", 'utf8', ()=>{
+                    fs.appendFile('syncKey.txt', newSyncCheckKey + "|"+ "\r\n", 'utf8', ()=>{
                         //console.log("wirte sendMessageById_postdata.txt finish!");
                     });
 
-
+                    if(newSyncKey != newSyncCheckKey){
+                        syncKey = newSyncCheckKey;
+                    }
 
                     getMessage();
                     
@@ -898,16 +900,6 @@ function uploadFile(filePath,targetGroup){
                 },
             };
 
-            /*
-            fs.writeFile('uploadfile_option.txt', JSON.stringify(options), 'utf8', ()=>{
-                console.log("wirte uploadfile_option.txt finish!");
-            });
-
-            fs.writeFile('getBoundary.txt', form.getBoundary(), 'utf8', ()=>{
-                console.log("wirte getBoundary.txt finish!");
-            });
-            */
-
             var resMessage = "";
             //var req = http.request(options, (res) =>{
             var req = https.request(options, (res) =>{
@@ -916,7 +908,7 @@ function uploadFile(filePath,targetGroup){
                     resMessage += chunk;
                 });
                 res.on('end', () => {
-                    console.log(`end: ${resMessage}`);
+                    //console.log(`end: ${resMessage}`);
                     var responseObject = JSON.parse(resMessage);
                     resolve(responseObject.MediaId);
                 });
@@ -924,10 +916,6 @@ function uploadFile(filePath,targetGroup){
             form.pipe(req);
 
         });
-
-
-
-
     });
 }
 
