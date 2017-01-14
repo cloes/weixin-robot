@@ -84,7 +84,7 @@ function createWindow() {
         event.sender.send('show-image');
     })
 
-    mainWindow.webContents.openDevTools();
+    //mainWindow.webContents.openDevTools();
     mainWindow.on('closed',function(){
         mainWindow = null;
     });
@@ -142,7 +142,7 @@ function createQRimage(){
     var uuidString = 'https://login.weixin.qq.com/l/' + uuid;
     var qr = require('qr-image');
     var qr_png = qr.image(uuidString, { type: 'png' });
-    qr_png.pipe(require('fs').createWriteStream('login.png'));
+    qr_png.pipe(require('fs').createWriteStream('./img/login.png'));
 }
 
 
