@@ -18,7 +18,7 @@ const querystring = require('querystring');
 
 const crypto = require('crypto');
 
-const request = require('request');
+//const request = require('request');
 
 const dateFormat = require('dateformat');
 
