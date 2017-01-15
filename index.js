@@ -84,7 +84,7 @@ function createWindow() {
         event.sender.send('show-image');
     })
 
-    mainWindow.webContents.openDevTools();
+    //mainWindow.webContents.openDevTools();
     mainWindow.on('closed',function(){
         mainWindow = null;
     });
