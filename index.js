@@ -582,6 +582,19 @@ function testSync(){
                     }
                 });
             });
+
+            req.on("timeout",()=>{
+                req.abort();
+                console.log("timeout and retry");
+                testSyncRequest()
+            });
+
+            req.on("error",()=>{
+                req.abort();
+                console.log("error and retry");
+                testSyncRequest()
+            });
+            
             req.end();
         }
         testSyncRequest();
