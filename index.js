@@ -250,10 +250,6 @@ function loginPromise(){
                 });
                 cookies = cookies.substr(0, cookies.length - 2);
 
-                fs.writeFile('login.txt', chunk, 'utf8', ()=>{
-                    //console.log("wirte message finish!");
-                });
-
                 parser = new xml2js.Parser();
                 parser.parseString(chunk, function (err, result) {
                     skey = result.error.skey[0];
@@ -307,12 +303,7 @@ function getSyncKey(){
             res.on('data', (chunk) => {
                 res_message += chunk;
             });
-            res.on('end', () => {
-                //console.log('No more data in response.');
-                fs.writeFile('message.txt', res_message, 'utf8', ()=>{
-                    console.log("wirte message finish!");
-                });
-                
+            res.on('end', () => {                
                 res_obj = JSON.parse(res_message);
                 myAccount = res_obj.User;
                 SyncKeyObj = res_obj.SyncKey;
@@ -414,10 +405,6 @@ function getContact(){
                 res_message += chunk;
             });
             res.on('end', () => {
-                //console.log('No more data in response from getContact.');
-                fs.writeFile('contact.txt', res_message, 'utf8', ()=>{
-                    console.log("wirte contact finish!");
-                });
                 resObj = JSON.parse(res_message);
                 memberList = resObj.MemberList;
 
@@ -459,10 +446,6 @@ function getAllGroupMembers(){
             "List":groupNameList,
         };
         postData = JSON.stringify(postData);
-
-        fs.writeFile('getAllGroupMembers_postdata.txt', postData, 'utf8', ()=>{
-            console.log("wirte getAllGroupMembers_postdata finish!");
-        });
 
         var options = {
             //rejectUnauthorized:true,
@@ -614,10 +597,6 @@ function getMessageContentAndUpdateSynckey(selector){
         };
         postData = JSON.stringify(postData);
 
-        fs.writeFile('syncPostData.txt', postData, 'utf8', ()=>{
-            //console.log("wirte syncPostData.txt finish!");
-        });
-
         var options = {
             //rejectUnauthorized:true,
             agent:false,
@@ -662,20 +641,12 @@ function getMessageContentAndUpdateSynckey(selector){
                     syncKey = newSyncKey;
                     SyncKeyObj = responseObj.SyncKey;
                     console.log("update synckey");
-                    fs.appendFile('syncKey.txt', syncKey + "\r\n", 'utf8', ()=>{
-                        //console.log("wirte sendMessageById_postdata.txt finish!");
-                    });
-
 
                     newSyncCheckKey = "";
                     for(var i = 0; i < responseObj.SyncCheckKey.Count; i++){
                         newSyncCheckKey += responseObj.SyncCheckKey.List[i].Key + "_" + responseObj.SyncCheckKey.List[i].Val + "|";
                     }
                     newSyncCheckKey = newSyncCheckKey.substr(0, newSyncCheckKey.length - 1);
-
-                    fs.appendFile('syncKey.txt', newSyncCheckKey + "|"+ "\r\n", 'utf8', ()=>{
-                        //console.log("wirte sendMessageById_postdata.txt finish!");
-                    });
 
                     if(newSyncKey != newSyncCheckKey){
                         syncKey = newSyncCheckKey;
@@ -971,9 +942,6 @@ function handleMessage(messageObj){
 
 function getSyncOption(){
     ipc.on('sendSyncOption', (event, arg) => {
-        fs.writeFile('SyncOption.txt', arg, 'utf8', ()=>{
-            console.log("wirte SyncOption.txt finish!");
-        });
         syncOption = JSON.parse(arg);
         syncFlag = true;
     });
