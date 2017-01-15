@@ -84,7 +84,7 @@ function createWindow() {
         event.sender.send('show-image');
     })
 
-    //mainWindow.webContents.openDevTools();
+    mainWindow.webContents.openDevTools();
     mainWindow.on('closed',function(){
         mainWindow = null;
     });
@@ -142,7 +142,7 @@ function createQRimage(){
     var uuidString = 'https://login.weixin.qq.com/l/' + uuid;
     var qr = require('qr-image');
     var qr_png = qr.image(uuidString, { type: 'png' });
-    qr_png.pipe(require('fs').createWriteStream('./img/login.png'));
+    qr_png.pipe(require('fs').createWriteStream(`${__dirname}/img/login.png`));
 }
 
 
@@ -197,14 +197,30 @@ function doRequestPromise(){
                         retry_time--;
                         setTimeout(doRequest,1000);
                     }else{
-                        reject(408);
+                        reject("try too many times!!!");
                     }
                 })
+
             });
 
-            req.on('error',(err)=>{
-                console.log(err);
-            })
+            /*
+            req.on('close', function() {
+                console.log('connection closed!');
+            });
+
+            req.on('error', function(err) {
+                console.log('http request error : '+err);
+                callback({'error':err});
+                throw err;
+            });
+
+            req.on('socket', function(socket) {
+                console.log('socket size:'+socket.bufferSize);
+                socket.on('data', function(data) {
+                    console.log('socket data:'+data);
+                });
+            });
+            */
             
             req.end();
         }
@@ -969,15 +985,24 @@ function processMessage(){
     getMessage();
 }
 
+
+process.on('uncaughtException', function (err) {
+    console.log(err);
+}); 
+
+
 app.on('ready',()=>{
   var promise = getUuid();
-  promise.then(createQRimage).then(createWindow).then(doRequestPromise).then(loginPromise,(reject_code)=>{
-      console.log(`reject_code is:${reject_code}`);
+  promise.then(createQRimage).then(createWindow).then(doRequestPromise).then(loginPromise,(errorMessage)=>{
+      throw new Error(errorMessage);
   }).then(getSyncKey)
   .then(statusNotify)
   .then(getContact)
   .then(getAllGroupMembers)
-  .then(processMessage);
+  .then(processMessage)
+  .catch((error)=>{
+      console.log(error.message);
+  });
 })
 
 app.on('window-all-closed',function(){
