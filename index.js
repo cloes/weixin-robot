@@ -803,11 +803,11 @@ function getImage(msgID){
             }
         };
 
-        var file = fs.createWriteStream("./img/" + msgID + ".png");
+        var file = fs.createWriteStream(`${__dirname}/img/` + msgID + ".png");
         var request = https.get(options, function(response) {
             response.pipe(file);
             file.on('finish', function() {
-                var filePath = "./img/" + msgID + ".png";
+                var filePath = __dirname + "/img/" + msgID + ".png";
                 resolve(filePath);
                 file.close();
             }).on('error', function(err) {
