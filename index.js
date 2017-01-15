@@ -411,9 +411,9 @@ function getContact(){
                 memberList.forEach((element)=>{
                     if(element.UserName.substr(0,2) === "@@"){
                         groupList.push(element);
-                        fs.appendFile('groupList.txt', element.UserName + "\r\n", 'utf8', ()=>{
-                            console.log("appendFile groupList finish!");
-                        });
+                        // fs.appendFile('groupList.txt', element.UserName + "\r\n", 'utf8', ()=>{
+                        //     console.log("appendFile groupList finish!");
+                        // });
                     }
                 });
                 resolve();
@@ -468,9 +468,9 @@ function getAllGroupMembers(){
             res.on('end', () => {
                 //console.log('No more data in response from getAllGroupMembers.');
                 
-                fs.writeFile('AllGroupMembers.txt', res_message, 'utf8', ()=>{
-                    console.log("wirte AllGroupMembers finish!");
-                });
+                // fs.writeFile('AllGroupMembers.txt', res_message, 'utf8', ()=>{
+                //     console.log("wirte AllGroupMembers finish!");
+                // });
                 
                 resObj = JSON.parse(res_message);
                 resObj.ContactList.forEach((element)=>{
@@ -479,9 +479,9 @@ function getAllGroupMembers(){
                     encryChatRoomId[element.UserName] = element.EncryChatRoomId;
                 });
 
-                fs.writeFile('groupMembers.txt', JSON.stringify(groupMembers), 'utf8', ()=>{
-                    console.log("wirte groupMembers finish!");
-                });
+                // fs.writeFile('groupMembers.txt', JSON.stringify(groupMembers), 'utf8', ()=>{
+                //     console.log("wirte groupMembers finish!");
+                // });
 
                 mainWindow.webContents.send('sendGroupMembers', JSON.stringify(groupMembers));
                 console.log("ipc sending finish")
