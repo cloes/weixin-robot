@@ -74,6 +74,7 @@ var syncFlag = false;
 
 var syncOption;
 
+
 function createWindow() {
     mainWindow = new BrowserWindow({width:800,height:600});
 
