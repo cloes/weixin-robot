@@ -38,9 +38,46 @@ npm install
 `
 npm start
 `
-开启程序
 
-如图：
+开启程序，如图：
+
+![启动图片](https://cloud.githubusercontent.com/assets/5997418/21980021/701663ee-dc1c-11e6-8b59-4ad0026cf5e0.png)
+
+此时，后台终端也在输出调试信息：
+
+![终端调试信息](https://cloud.githubusercontent.com/assets/5997418/21980686/327b9e2a-dc1f-11e6-8ed2-0d896402f9fb.png)
+
+然后用手机微信程序扫描二维码，此时点击消息源就会显示群组和群组内的用户：
+
+选择群组：
+
+![选择群组](https://cloud.githubusercontent.com/assets/5997418/21980489/8d201b90-dc1e-11e6-932b-f6b415ec4aff.png)
+
+选择群组后，选择用户(支持多选)：
+
+![选择用户](https://cloud.githubusercontent.com/assets/5997418/21980571/ca684996-dc1e-11e6-9993-047edefd85af.png)
+
+图中的三个用户的发言就会被转发到“目标群”
+
+选择目标群(支持多选):
+
+![选择目标群](https://cloud.githubusercontent.com/assets/5997418/21980734/66b33acc-dc1f-11e6-9fe1-d75d11cba38e.png)
+
+点击确定后，程序开始进入监听转发状态。
+
+
+**注意：** 只有在群设置里面设置了“保存到通讯录”的群组才会显示在下拉框里面
+
+![保存到通讯录](https://cloud.githubusercontent.com/assets/5997418/21980948/2d532070-dc20-11e6-9b86-1f5777771462.png)
+
+至此，设置完成，工具就会静静的工作，终端也会输出调试信息，如图：
+
+![终端输出](https://cloud.githubusercontent.com/assets/5997418/21981041/9cad28e4-dc20-11e6-81a9-9a2b8884dd0e.png)
+
+## 4.bug提交
+
+各位如果遇到问题，欢迎提交到issues.
+
 
 
 
