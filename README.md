@@ -1,3 +1,5 @@
+![CI Status](https://api.travis-ci.org/cloes/wxBot.svg?branch=master)
+
 # weixin-robot
 
 这是一个微信机器人，是本人在学习使用Node.js的过程中，为激发自身的学习热情而做的项目。同时该项目也是为了解决在"聊聊架构"微信群在技术分享过程中消息转发的问题、
