@@ -907,16 +907,13 @@ function uploadFile(filePath,targetGroup){
 }
 
 //图片转发函数，无需上传图片，减轻网络上传压力
-function transpondImage(content,destinationId){
-    return new Promise(function(resolve,reject){
+function transpondImage(content,destinationId,n){
+    var transpondPromise = new Promise(function (resolve,reject) {
         var timestamp = new Date().getTime();
         var clientMsgId = timestamp.toString().substr(0,17) + Math.random().toString().substr(-4);
-        //content = content.replace("<br/>", "");
-        //content = content.replace("\t", "");
 
         var entities = new Entities();
         content = entities.decode(content);
-
 
         fs.writeFile('transpondImage_content.txt', content, 'utf8', ()=>{
             //console.log("wirte AllGroupMembers finish!");
@@ -929,7 +926,7 @@ function transpondImage(content,destinationId){
                 "Type": 3,
                 "MediaId":"",
                 "FromUserName":myAccount.UserName,
-                "ToUserName":destinationId,
+                "ToUserName":destinationId[n],
                 "LocalID": clientMsgId,
                 "ClientMsgId": clientMsgId,
                 "Content":content
@@ -957,12 +954,24 @@ function transpondImage(content,destinationId){
                 resMessage += chunk;
             });
             res.on('end', () => {
-                console.log(resMessage);
+                //console.log(resMessage);
+                resolve();
             });
         });
         req.write(postData);
         req.end();
+        
+    });
 
+    transpondPromise.then(function(){
+        if(n > 0){
+            n--;
+            console.log(`nValue is ${n}`);
+            transpondImage(content,destinationId,n);
+        }else{
+            console.log(`n is ${n}`);
+            console.log("finish sending picture");
+        }
     });
 }
 
@@ -974,6 +983,38 @@ function handleMessage(messageObj){
                 if(message.FromUserName === syncOption.sourceGroupSelected){//消息来源于指定的群
                     syncOption.sourceMemberSelected.forEach((sourceMemberSelected)=>{
                         if(message.Content.substr(0,message.Content.indexOf(":")) === sourceMemberSelected){
+                            var realContent = message.Content.substr(message.Content.indexOf(">")+1);
+                            if(message.MsgType === 1){//1表示文本
+                                syncOption.targetGroupSelected.forEach((targetGroup)=>{
+                                    sendMessageById(realContent, targetGroup);
+                                });
+                            }
+
+                            if(message.MsgType === 3){//3表示图片
+                                getImage(message.MsgId);
+                                console.log("get pic");
+                                transpondImage(realContent, syncOption.targetGroupSelected, syncOption.targetGroupSelected.length);
+
+
+                                
+                                /*
+                                //TODO:这里多次下载同一张图片，要改进
+                                getImagePromise = getImage(message.MsgId);
+                                getImagePromise
+                                .then((filePath)=>{
+                                    //TODO:改为转发图片函数，可以不用上传图片
+                                    return transpondImage(realContent, targetGroup);
+                                    //return uploadFile(filePath, targetGroup);
+                                });
+                                // .then((mediaId)=>{
+                                //     sendMessageImageById(mediaId,targetGroup);
+                                // });
+                                */
+                            }
+
+
+
+
                             syncOption.targetGroupSelected.forEach((targetGroup)=>{
                                 var realContent = message.Content.substr(message.Content.indexOf(">")+1);
                                 if(message.MsgType === 1){//1表示文本
@@ -994,6 +1035,15 @@ function handleMessage(messageObj){
                                     // });
                                 }
                             });
+
+
+
+
+
+
+
+
+
                         }
                     });
                 }
