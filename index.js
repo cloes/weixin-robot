@@ -24,6 +24,8 @@ const dateFormat = require('dateformat');
 
 const FormData = require('form-data');
 
+const Entities = require('html-entities').XmlEntities;
+
 const now = new Date();
 
 let mainWindow;
@@ -893,7 +895,7 @@ function uploadFile(filePath,targetGroup){
                     resMessage += chunk;
                 });
                 res.on('end', () => {
-                    //console.log(`end: ${resMessage}`);
+                    console.log(`end: ${resMessage}`);
                     var responseObject = JSON.parse(resMessage);
                     resolve(responseObject.MediaId);
                 });
@@ -901,6 +903,66 @@ function uploadFile(filePath,targetGroup){
             form.pipe(req);
 
         });
+    });
+}
+
+//图片转发函数，无需上传图片，减轻网络上传压力
+function transpondImage(content,destinationId){
+    return new Promise(function(resolve,reject){
+        var timestamp = new Date().getTime();
+        var clientMsgId = timestamp.toString().substr(0,17) + Math.random().toString().substr(-4);
+        //content = content.replace("<br/>", "");
+        //content = content.replace("\t", "");
+
+        var entities = new Entities();
+        content = entities.decode(content);
+
+
+        fs.writeFile('transpondImage_content.txt', content, 'utf8', ()=>{
+            //console.log("wirte AllGroupMembers finish!");
+        });
+
+
+        var postData = JSON.stringify({
+            "BaseRequest": baseParams,
+            "Msg": {
+                "Type": 3,
+                "MediaId":"",
+                "FromUserName":myAccount.UserName,
+                "ToUserName":destinationId,
+                "LocalID": clientMsgId,
+                "ClientMsgId": clientMsgId,
+                "Content":content
+            },
+            "Scene":2
+        });
+
+        var options = {
+            //rejectUnauthorized:true,
+            agent:false,
+            hostname: redirectUriObject.hostname,
+            path: "/cgi-bin/mmwebwx-bin/webwxsendmsgimg?fun=async&f=json",
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json;charset=UTF-8',
+                'Content-Length': postData.length,
+                'Cookie': cookies,
+            }
+        };
+
+        var resMessage = "";
+        var req = https.request(options, (res) => {
+            res.setEncoding('utf8');
+            res.on('data', (chunk) => {
+                resMessage += chunk;
+            });
+            res.on('end', () => {
+                console.log(resMessage);
+            });
+        });
+        req.write(postData);
+        req.end();
+
     });
 }
 
@@ -919,14 +981,17 @@ function handleMessage(messageObj){
                                 }
                                 
                                 if(message.MsgType === 3){//3表示图片
+                                    //TODO:这里多次下载同一张图片，要改进
                                     getImagePromise = getImage(message.MsgId);
                                     getImagePromise
                                     .then((filePath)=>{
-                                        return uploadFile(filePath,targetGroup);
-                                    })
-                                    .then((mediaId)=>{
-                                        sendMessageImageById(mediaId,targetGroup);
+                                        //TODO:改为转发图片函数，可以不用上传图片
+                                        return transpondImage(realContent, targetGroup);
+                                        //return uploadFile(filePath, targetGroup);
                                     });
+                                    // .then((mediaId)=>{
+                                    //     sendMessageImageById(mediaId,targetGroup);
+                                    // });
                                 }
                             });
                         }
