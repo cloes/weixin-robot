@@ -915,11 +915,6 @@ function transpondImage(content,destinationId,n){
         var entities = new Entities();
         content = entities.decode(content);
 
-        fs.writeFile('transpondImage_content.txt', content, 'utf8', ()=>{
-            //console.log("wirte AllGroupMembers finish!");
-        });
-
-
         var postData = JSON.stringify({
             "BaseRequest": baseParams,
             "Msg": {
@@ -966,10 +961,8 @@ function transpondImage(content,destinationId,n){
     transpondPromise.then(function(){
         if(n > 0){
             n--;
-            console.log(`nValue is ${n}`);
             transpondImage(content,destinationId,n);
         }else{
-            console.log(`n is ${n}`);
             console.log("finish sending picture");
         }
     });
@@ -994,56 +987,7 @@ function handleMessage(messageObj){
                                 getImage(message.MsgId);
                                 console.log("get pic");
                                 transpondImage(realContent, syncOption.targetGroupSelected, syncOption.targetGroupSelected.length);
-
-
-                                
-                                /*
-                                //TODO:这里多次下载同一张图片，要改进
-                                getImagePromise = getImage(message.MsgId);
-                                getImagePromise
-                                .then((filePath)=>{
-                                    //TODO:改为转发图片函数，可以不用上传图片
-                                    return transpondImage(realContent, targetGroup);
-                                    //return uploadFile(filePath, targetGroup);
-                                });
-                                // .then((mediaId)=>{
-                                //     sendMessageImageById(mediaId,targetGroup);
-                                // });
-                                */
                             }
-
-
-
-
-                            syncOption.targetGroupSelected.forEach((targetGroup)=>{
-                                var realContent = message.Content.substr(message.Content.indexOf(">")+1);
-                                if(message.MsgType === 1){//1表示文本
-                                    sendMessageById(realContent, targetGroup);
-                                }
-                                
-                                if(message.MsgType === 3){//3表示图片
-                                    //TODO:这里多次下载同一张图片，要改进
-                                    getImagePromise = getImage(message.MsgId);
-                                    getImagePromise
-                                    .then((filePath)=>{
-                                        //TODO:改为转发图片函数，可以不用上传图片
-                                        return transpondImage(realContent, targetGroup);
-                                        //return uploadFile(filePath, targetGroup);
-                                    });
-                                    // .then((mediaId)=>{
-                                    //     sendMessageImageById(mediaId,targetGroup);
-                                    // });
-                                }
-                            });
-
-
-
-
-
-
-
-
-
                         }
                     });
                 }
