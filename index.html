@@ -16,7 +16,10 @@
     <title>this is index</title>
     <script>
         $(document).ready(function() {
-            $('#sourceMember').multiselect();
+            $('#sourceMember').multiselect({
+                enableFiltering: true,
+                filterPlaceholder: '搜索'
+            });
             $('#targetGroup').multiselect();
         });
     </script>

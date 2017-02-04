@@ -194,7 +194,7 @@ function doRequestPromise(){
                         console.log("scand");
                         doRequest();
                     }else if(code == 200){//success
-                        console.log("success");
+                        console.log("login success");
                         resolve();
                     }else if(code == 408 && retry_time > 0){//timeout
                         retry_time--;
