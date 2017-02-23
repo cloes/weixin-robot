@@ -949,7 +949,7 @@ function transpondImage(content,destinationId,n){
                 resMessage += chunk;
             });
             res.on('end', () => {
-                //console.log(resMessage);
+                console.log(resMessage);
                 resolve();
             });
         });
@@ -959,8 +959,10 @@ function transpondImage(content,destinationId,n){
     });
 
     transpondPromise.then(function(){
+        console.log(`n is ${n}`);
         if(n > 0){
             n--;
+            //setTimeout(transpondImage(content,destinationId,n), 500);
             transpondImage(content,destinationId,n);
         }else{
             console.log("finish sending picture");
