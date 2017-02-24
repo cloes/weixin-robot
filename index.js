@@ -943,13 +943,15 @@ function transpondImage(content,destinationId,n){
         };
 
         var resMessage = "";
+        var resObject;
         var req = https.request(options, (res) => {
             res.setEncoding('utf8');
             res.on('data', (chunk) => {
                 resMessage += chunk;
             });
             res.on('end', () => {
-                console.log(resMessage);
+                resObject = JSON.parse(resMessage);
+                console.log(resObject.BaseResponse.Ret);
                 resolve();
             });
         });
@@ -973,11 +975,12 @@ function transpondImage(content,destinationId,n){
 
 function handleMessage(messageObj){
     messageObj.AddMsgList.forEach((message)=>{
-        if(syncFlag){
+        if(syncFlag){//用户是否设置了转发规则
             if(message.FromUserName.substr(0,2) === "@@"){//群消息
                 if(message.FromUserName === syncOption.sourceGroupSelected){//消息来源于指定的群
                     syncOption.sourceMemberSelected.forEach((sourceMemberSelected)=>{
                         if(message.Content.substr(0,message.Content.indexOf(":")) === sourceMemberSelected){
+                            //从这里开始存入队列
                             var realContent = message.Content.substr(message.Content.indexOf(">")+1);
                             if(message.MsgType === 1){//1表示文本
                                 syncOption.targetGroupSelected.forEach((targetGroup)=>{
@@ -1024,6 +1027,8 @@ function getMessage(){
 
 
 function processMessage(){
+    //初始化队列
+    //初始化消费者
     getSyncOption();
     getMessage();
 }
