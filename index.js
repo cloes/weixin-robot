@@ -76,6 +76,8 @@ var syncFlag = false;
 
 var syncOption;
 
+var messageQueue = new Array();
+
 
 function createWindow() {
     mainWindow = new BrowserWindow({width:800,height:600});
@@ -654,7 +656,7 @@ function getMessageContentAndUpdateSynckey(selector){
                     if(newSyncKey != newSyncCheckKey){
                         syncKey = newSyncCheckKey;
                     }
-
+                    //函数递归
                     getMessage();
                     
                     switch(selector){
@@ -973,15 +975,47 @@ function transpondImage(content,destinationId,n){
 }
 
 
+function messageCustomer(){
+    function checkMessageQueue(){
+        if(messageQueue.length > 0){
+            var message = messageQueue.pop();
+            console.log(message);
+            if(message.MsgType === 1){//1表示文本
+                syncOption.targetGroupSelected.forEach((targetGroup)=>{
+                    sendMessageById(message.Content, targetGroup);
+                });
+            }
+
+            if(message.MsgType === 3){//3表示图片
+                //getImage(message.MsgId);
+                //console.log("get pic");
+                transpondImage(message.Content, syncOption.targetGroupSelected, syncOption.targetGroupSelected.length);
+            }
+        }
+        setTimeout(checkMessageQueue, 1000);
+    }
+    checkMessageQueue();
+}
+
+
 function handleMessage(messageObj){
     messageObj.AddMsgList.forEach((message)=>{
         if(syncFlag){//用户是否设置了转发规则
             if(message.FromUserName.substr(0,2) === "@@"){//群消息
                 if(message.FromUserName === syncOption.sourceGroupSelected){//消息来源于指定的群
                     syncOption.sourceMemberSelected.forEach((sourceMemberSelected)=>{
-                        if(message.Content.substr(0,message.Content.indexOf(":")) === sourceMemberSelected){
-                            //从这里开始存入队列
+                        if(message.Content.substr(0,message.Content.indexOf(":")) === sourceMemberSelected){//消息来自指定的用户
                             var realContent = message.Content.substr(message.Content.indexOf(">")+1);
+                            //从这里开始存入队列
+                            messageQueue.push({MsgId:message.MsgId, MsgType:message.MsgType, Content:realContent});
+                            fs.appendFile('messageQueue.txt', JSON.stringify(messageQueue) + "\r\n\r\n", 'utf8', ()=>{
+                                console.log("appendFile messageQueue finish!");
+                            });
+                            if(message.MsgType === 3){//3表示图片
+                                getImage(message.MsgId);
+                                console.log("get pic");
+                            }
+                            /*
                             if(message.MsgType === 1){//1表示文本
                                 syncOption.targetGroupSelected.forEach((targetGroup)=>{
                                     sendMessageById(realContent, targetGroup);
@@ -993,6 +1027,7 @@ function handleMessage(messageObj){
                                 console.log("get pic");
                                 transpondImage(realContent, syncOption.targetGroupSelected, syncOption.targetGroupSelected.length);
                             }
+                            */
                         }
                     });
                 }
@@ -1027,8 +1062,9 @@ function getMessage(){
 
 
 function processMessage(){
-    //初始化队列
+    //初始化队列,messageQueue已经在全局变量处定义
     //初始化消费者
+    messageCustomer();
     getSyncOption();
     getMessage();
 }
