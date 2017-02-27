@@ -953,6 +953,20 @@ function transpondImage(content,destinationId,n){
                 resolve();
             });
         });
+
+        req.on('error', function(err) {
+            console.log('http request error : '+err);
+            n++;
+            resolve();
+
+            fs.appendFile('transpondImage_error.txt', err + "\r\n", 'utf8', ()=>{
+                 console.log("appendFile transpondImage_error finish!");
+            });
+
+            //callback({'error':err});
+            //throw err;
+        });
+
         req.write(postData);
         req.end();
         
