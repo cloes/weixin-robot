@@ -78,6 +78,8 @@ var syncOption;
 
 var messageQueue = new Array();
 
+var messageQueueGetInterval = 8000;//8000毫秒的队列时间间隔
+
 
 function createWindow() {
     mainWindow = new BrowserWindow({width:800,height:600});
@@ -1006,7 +1008,7 @@ function messageCustomer(){
                 transpondImage(message.Content, syncOption.targetGroupSelected, syncOption.targetGroupSelected.length);
             }
         }
-        setTimeout(checkMessageQueue, 1000);
+        setTimeout(checkMessageQueue, messageQueueGetInterval);
     }
     checkMessageQueue();
 }
