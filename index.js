@@ -992,7 +992,7 @@ function transpondImage(content,destinationId,n){
 function messageCustomer(){
     function checkMessageQueue(){
         if(messageQueue.length > 0){
-            var message = messageQueue.pop();
+            var message = messageQueue.shift();
             console.log(message);
             if(message.MsgType === 1){//1表示文本
                 syncOption.targetGroupSelected.forEach((targetGroup)=>{
