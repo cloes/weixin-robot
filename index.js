@@ -1,3 +1,5 @@
+//"use strict";
+
 const electron = require('electron');
 
 const fs = require('fs');
@@ -257,7 +259,7 @@ function loginPromise(){
                 });
                 cookies = cookies.substr(0, cookies.length - 2);
 
-                parser = new xml2js.Parser();
+                var parser = new xml2js.Parser();
                 parser.parseString(chunk, function (err, result) {
                     skey = result.error.skey[0];
                     wxsid = result.error.wxsid[0];
@@ -311,7 +313,7 @@ function getSyncKey(){
                 res_message += chunk;
             });
             res.on('end', () => {                
-                res_obj = JSON.parse(res_message);
+                var res_obj = JSON.parse(res_message);
                 myAccount = res_obj.User;
                 SyncKeyObj = res_obj.SyncKey;
 
@@ -635,6 +637,12 @@ function getMessageContentAndUpdateSynckey(selector){
                         webwx_data_ticket = value;
                     }
                 });
+
+
+                fs.writeFile('response_message.txt', resMessage, 'utf8', ()=>{
+                    console.log("response_message.txt finish!");
+                });
+                
                 
 
                 var responseObj = JSON.parse(resMessage);
@@ -649,7 +657,7 @@ function getMessageContentAndUpdateSynckey(selector){
                     SyncKeyObj = responseObj.SyncKey;
                     console.log("update synckey");
 
-                    newSyncCheckKey = "";
+                    var newSyncCheckKey = "";
                     for(var i = 0; i < responseObj.SyncCheckKey.Count; i++){
                         newSyncCheckKey += responseObj.SyncCheckKey.List[i].Key + "_" + responseObj.SyncCheckKey.List[i].Val + "|";
                     }
