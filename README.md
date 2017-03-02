@@ -5,7 +5,7 @@
 ## UPDATE
 (2017.02.24):添加了message-queue分支。
 
-(2017.02.28):抽离消息队列的间隔时间为一个独立的变量messageQueueGetInterval,单位是毫秒
+(2017.02.28):抽离消息队列的间隔时间为一个独立的变量messageQueueGetInterval，单位是毫秒
 
 ---
 
