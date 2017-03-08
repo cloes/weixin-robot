@@ -64,7 +64,7 @@ var encryChatRoomId = {};
 
 //var host = ["webpush", "webpush2"];
 
-var host = ["webpush"];
+//var host = ["webpush"];
 
 var cookies = "";
 
@@ -542,10 +542,10 @@ function testSync(){
             }
         };
 
-        var hostIndex = 0;
+        //var hostIndex = 0;
         function testSyncRequest(){
-            options.hostname = host[hostIndex] + ".wx2.qq.com";
-            //console.log(options);
+            //options.hostname = host[hostIndex] + ".wx2.qq.com";
+            options.hostname = "webpush." + redirectUriObject.hostname;
             var req = https.request(options, (res) => {
                 res.setEncoding('utf8');
                 res.on('data', (chunk) => {
@@ -565,10 +565,11 @@ function testSync(){
                             //console.log("sync test success");
                             resolve(selector);
                         }
-                    }else if(hostIndex < host.length - 1){
-                        hostIndex ++;
+                    }else if(false){
+                        //用于testync的重试操作
+                        //hostIndex ++;
                         //console.log("sync test fail");
-                        testSyncRequest();
+                        //testSyncRequest();
                     }else{
                         reject();
                     }
