@@ -64,7 +64,7 @@ var encryChatRoomId = {};
 
 //var host = ["webpush", "webpush2"];
 
-var host = ["webpush2"];
+var host = ["webpush"];
 
 var cookies = "";
 
@@ -544,7 +544,7 @@ function testSync(){
 
         var hostIndex = 0;
         function testSyncRequest(){
-            options.hostname = host[hostIndex] + ".weixin.qq.com";
+            options.hostname = host[hostIndex] + ".wx2.qq.com";
             //console.log(options);
             var req = https.request(options, (res) => {
                 res.setEncoding('utf8');
