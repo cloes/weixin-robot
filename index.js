@@ -596,127 +596,129 @@ function testSync(){
 
 
 //TODO:这里还有set-cookie操作，要把该内容添加进去
-function getMessageContentAndUpdateSynckey(selector){
+function getMessageContentAndUpdateSynckeyPromise(selector){
     return new Promise(function(resolve, reject){
-        var timestamp = new Date().getTime();
-        timestamp = timestamp.toString().substr(0,10);
-        var postData = {
-            "BaseRequest": baseParams,
-            "SyncKey": SyncKeyObj,
-            "rr": ~parseInt(timestamp),
-        };
-        postData = JSON.stringify(postData);
+        function getMessageContentAndUpdateSynckey(){
+            var timestamp = new Date().getTime();
+            timestamp = timestamp.toString().substr(0,10);
+            var postData = {
+                "BaseRequest": baseParams,
+                "SyncKey": SyncKeyObj,
+                "rr": ~parseInt(timestamp),
+            };
+            postData = JSON.stringify(postData);
 
-        var options = {
-            //rejectUnauthorized:true,
-            agent:false,
-            hostname: redirectUriObject.hostname,
-            path: "/cgi-bin/mmwebwx-bin/webwxsync?sid=" + wxsid + "&skey=" + skey +"&lang=en_US&pass_ticket=" + pass_ticket,
-            method: 'POST',
-            timeout: 60000,
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': postData.length,
-                'Cookie': cookies,
-            }
-        }
-
-        var req = https.request(options, (res) => {
-            var resMessage = "";
-            res.setEncoding('utf8');
-            res.on('data', (chunk) => {
-                resMessage += chunk;
-            });
-            res.on('end', () => {
-                var syncCookies = res.headers['set-cookie'];
-                syncCookies.forEach((element)=>{
-                    var pattern = /^(\w+)=([a-z0-9A-Z_\+=/]+);/;
-                    pattern.test(element);
-                    var key = RegExp.$1;
-                    var value = RegExp.$2;
-                    if(key === "webwx_data_ticket"){
-                        webwx_data_ticket = value;
-                    }
-                });
-
-
-                fs.writeFile('response_message.txt', resMessage, 'utf8', ()=>{
-                    console.log("response_message.txt finish!");
-                });
-                
-                
-
-                var responseObj = JSON.parse(resMessage);
-                if(responseObj.BaseResponse.Ret == 0){
-                    newSyncKey = "";
-                    for(var i = 0; i < responseObj.SyncKey.Count; i++){
-                        newSyncKey += responseObj.SyncKey.List[i].Key + "_" + responseObj.SyncKey.List[i].Val + "|";
-                    }
-                    newSyncKey = newSyncKey.substr(0, newSyncKey.length - 1);
-
-                    syncKey = newSyncKey;
-                    SyncKeyObj = responseObj.SyncKey;
-                    console.log("update synckey");
-
-                    var newSyncCheckKey = "";
-                    for(var i = 0; i < responseObj.SyncCheckKey.Count; i++){
-                        newSyncCheckKey += responseObj.SyncCheckKey.List[i].Key + "_" + responseObj.SyncCheckKey.List[i].Val + "|";
-                    }
-                    newSyncCheckKey = newSyncCheckKey.substr(0, newSyncCheckKey.length - 1);
-
-                    if(newSyncKey != newSyncCheckKey){
-                        syncKey = newSyncCheckKey;
-                    }
-                    //函数递归
-                    //递归读取远程服务器的接口获取新的信息
-                    getMessage();
-                    
-                    switch(selector){
-                        case "2"://新的消息
-                            resolve(responseObj);
-                            break;
-                        case "4":
-                            //通讯录更新
-                            break;
-                        case "7":
-                            //手机上操作过
-                            break;
-                        default:
-                            break;
-                    }
-                }else{
-                    //reject();
+            var options = {
+                //rejectUnauthorized:true,
+                agent:false,
+                hostname: redirectUriObject.hostname,
+                path: "/cgi-bin/mmwebwx-bin/webwxsync?sid=" + wxsid + "&skey=" + skey +"&lang=en_US&pass_ticket=" + pass_ticket,
+                method: 'POST',
+                timeout: 60000,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': postData.length,
+                    'Cookie': cookies,
                 }
+            }
+
+            var req = https.request(options, (res) => {
+                var resMessage = "";
+                res.setEncoding('utf8');
+                res.on('data', (chunk) => {
+                    resMessage += chunk;
+                });
+                res.on('end', () => {
+                    var syncCookies = res.headers['set-cookie'];
+                    syncCookies.forEach((element)=>{
+                        var pattern = /^(\w+)=([a-z0-9A-Z_\+=/]+);/;
+                        pattern.test(element);
+                        var key = RegExp.$1;
+                        var value = RegExp.$2;
+                        if(key === "webwx_data_ticket"){
+                            webwx_data_ticket = value;
+                        }
+                    });
+
+
+                    fs.writeFile('response_message.txt', resMessage, 'utf8', ()=>{
+                        console.log("response_message.txt finish!");
+                    });
+                    
+                    
+
+                    var responseObj = JSON.parse(resMessage);
+                    if(responseObj.BaseResponse.Ret == 0){
+                        newSyncKey = "";
+                        for(var i = 0; i < responseObj.SyncKey.Count; i++){
+                            newSyncKey += responseObj.SyncKey.List[i].Key + "_" + responseObj.SyncKey.List[i].Val + "|";
+                        }
+                        newSyncKey = newSyncKey.substr(0, newSyncKey.length - 1);
+
+                        syncKey = newSyncKey;
+                        SyncKeyObj = responseObj.SyncKey;
+                        console.log("update synckey");
+
+                        var newSyncCheckKey = "";
+                        for(var i = 0; i < responseObj.SyncCheckKey.Count; i++){
+                            newSyncCheckKey += responseObj.SyncCheckKey.List[i].Key + "_" + responseObj.SyncCheckKey.List[i].Val + "|";
+                        }
+                        newSyncCheckKey = newSyncCheckKey.substr(0, newSyncCheckKey.length - 1);
+
+                        if(newSyncKey != newSyncCheckKey){
+                            syncKey = newSyncCheckKey;
+                        }
+                        //函数递归
+                        //递归读取远程服务器的接口获取新的信息
+                        getMessage();
+                        
+                        switch(selector){
+                            case "2"://新的消息
+                                resolve(responseObj);
+                                break;
+                            case "4":
+                                //通讯录更新
+                                break;
+                            case "7":
+                                //手机上操作过
+                                break;
+                            default:
+                                break;
+                        }
+                    }else{
+                        //reject();
+                    }
+                });
             });
-        });
 
-        req.on('error', function (e) {
-            // General error, i.e.
-            //  - ECONNRESET - server closed the socket unexpectedly
-            //  - ECONNREFUSED - server did not listen
-            //  - HPE_INVALID_VERSION
-            //  - HPE_INVALID_STATUS
-            //  - ... (other HPE_* codes) - server returned garbage
-            console.log(e);
-            console.log('when getting message from server, an network error occured');
-            //网络获取新消息出错时的重试机制
-            req.abort();
-        });
+            req.on('error', function (e) {
+                // General error, i.e.
+                //  - ECONNRESET - server closed the socket unexpectedly
+                //  - ECONNREFUSED - server did not listen
+                //  - HPE_INVALID_VERSION
+                //  - HPE_INVALID_STATUS
+                //  - ... (other HPE_* codes) - server returned garbage
+                //网络获取新消息出错时的重试机制
+                req.abort();
+                //console.log(e);
+                console.log('when getting message from server, an network error occured');
+                getMessageContentAndUpdateSynckey();
+            });
 
+            req.on('timeout', function () {
+                // Timeout happend. Server received request, but not handled it
+                // (i.e. doesn't send any response or it took to long).
+                // You don't know what happend.
+                // It will emit 'error' message as well (with ECONNRESET code).
+                req.abort();
+                console.log('when getting message from server, timeout occured');
+                getMessageContentAndUpdateSynckey()
+            });
 
-        req.on('timeout', function () {
-            // Timeout happend. Server received request, but not handled it
-            // (i.e. doesn't send any response or it took to long).
-            // You don't know what happend.
-            // It will emit 'error' message as well (with ECONNRESET code).
-
-            console.log('timeout');
-            req.abort();
-        });
-
-
-        req.write(postData);
-        req.end();
+            req.write(postData);
+            req.end();
+        }
+        getMessageContentAndUpdateSynckey();
     }); 
 }
 
@@ -1111,7 +1113,7 @@ function getMessage(){
     testSyncPromise.then((selector)=>{
         console.log("testSync OK");
         //console.log(`selector is ${selector}`);
-        return getMessageContentAndUpdateSynckey(selector);
+        return getMessageContentAndUpdateSynckeyPromise(selector);
     },()=>{console.log("testSync not OK");})
     .then((responseObject)=>{
         handleMessage(responseObject);
