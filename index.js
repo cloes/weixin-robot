@@ -668,6 +668,7 @@ function getMessageContentAndUpdateSynckey(selector){
                         syncKey = newSyncCheckKey;
                     }
                     //函数递归
+                    //递归读取远程服务器的接口获取新的信息
                     getMessage();
                     
                     switch(selector){
@@ -688,12 +689,40 @@ function getMessageContentAndUpdateSynckey(selector){
                 }
             });
         });
+
+        req.on('error', function (e) {
+            // General error, i.e.
+            //  - ECONNRESET - server closed the socket unexpectedly
+            //  - ECONNREFUSED - server did not listen
+            //  - HPE_INVALID_VERSION
+            //  - HPE_INVALID_STATUS
+            //  - ... (other HPE_* codes) - server returned garbage
+            console.log(e);
+            console.log('when getting message from server, an network error occured');
+            //网络获取新消息出错时的重试机制
+            req.abort();
+        });
+
+
+        req.on('timeout', function () {
+            // Timeout happend. Server received request, but not handled it
+            // (i.e. doesn't send any response or it took to long).
+            // You don't know what happend.
+            // It will emit 'error' message as well (with ECONNRESET code).
+
+            console.log('timeout');
+            req.abort();
+        });
+
+
         req.write(postData);
         req.end();
     }); 
 }
 
-//根据用户ID发送消息
+/**
+ * 根据用户ID发送消息
+ */
 function sendMessageById(content,destinationId) {
     var timestamp = new Date().getTime();
     var clientMsgId = timestamp.toString().substr(0,17) + Math.random().toString().substr(-4);
@@ -805,7 +834,9 @@ function sendMessageImageById(mediaId,destinationId){
     
 }
 
-//下载图片
+/**
+ * 下载图片
+ */
 function getImage(msgID){
     return new Promise(function(resolve, reject){
         var options = {
@@ -999,7 +1030,9 @@ function transpondImage(content,destinationId,n){
     });
 }
 
-
+/**
+ * 队列的消费者函数
+ */
 function messageCustomer(){
     function checkMessageQueue(){
         if(messageQueue.length > 0){
